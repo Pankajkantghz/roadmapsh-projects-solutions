@@ -1,0 +1,302 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.testimonial {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4rem;
+    padding: 5rem;
+}
+
+.testimonial-1 {
+    width: 80vw;
+    /* make change for height */
+    display: flex;
+    justify-content: space-between;
+    gap: 4rem;
+
+}
+
+.testimonial-2 {
+    width: 80vw;
+    height: 50vh;
+    display: flex;
+    justify-content: space-between;
+    gap: 4rem;
+    border-radius: 2rem;
+}
+
+.testimonial-3 {
+    width: 80vw;
+    height: 60vh;
+    border: 2px solid black;
+    border-radius: 2rem;
+}
+
+.card-1,
+.card-2,
+.card-3,
+.card-4 {
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    border: 2px solid #000000;
+    border-radius: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.card-1 {
+    flex: 5;
+    border: none;
+    gap: 1rem
+}
+
+.card-2 {
+    flex: 5;
+}
+
+.card-3 {
+    flex: 3;
+    overflow: hidden;
+    border: none;
+}
+
+.card-4 {
+    flex: 7;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem;
+    background-color: #000000;
+    color: #ffffff;
+}
+.card-5{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.up-1 {
+    flex: 7;
+    padding: 1rem;
+    font-size: xx-large;
+    background-color: black;
+    color: white;
+    border-radius: 2rem;
+    position: relative;
+}
+
+.down-1 {
+    flex: 3;
+    border-radius: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+
+}
+
+.img {
+    flex: 2;
+    height: 100%;
+    aspect-ratio: 1/1;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+
+.about {
+    flex: 8;
+}
+
+.img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* for card-2 */
+.up-2 {
+    flex: 7;
+    padding: 1rem;
+    font-size: xx-large;
+
+}
+
+.up-1::after {
+    content: "";
+    position: absolute;
+    bottom: -1rem;
+    left: 2.8rem;
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 20px solid black;
+}
+
+.card-3 img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stars {
+  font-size: 2rem;
+  color: gold;
+  
+}
+
+.about-container h1{
+    font-size: xx-large;
+}
+
+.about{
+    font-size: large;
+    color: #7a7a7a;
+}
+.review{
+    font-size: x-large;
+}
+.review-3{
+    text-align: center;
+    font-size: xx-large;
+    
+}
+.reviewer{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    
+}
+.images{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap:2rem;
+}
+.img-left, .img-right{
+    height: 50px;
+    width: 50px;
+     opacity: 0.5;
+    border-radius: 50%;
+
+}
+.images p{
+    font-weight: 1000;
+    font-size: xx-large;
+}
+.img-middle{
+    height: 60px;
+    width: 60px;
+    border-radius: 50%;
+}
+/* 📌 RESPONSIVE — For tablets and mobile screens */
+@media (max-width: 1024px) {
+  .testimonial {
+    padding: 3rem;
+    gap: 3rem;
+  }
+
+  .testimonial-1,
+  .testimonial-2 {
+    width: 90vw;
+    gap: 2rem;
+  }
+}
+
+/* 📌 RESPONSIVE — For screens smaller than 768px (tablets + large phones) */
+@media (max-width: 768px) {
+  .testimonial {
+    padding: 2rem;
+    gap: 2rem;
+  }
+
+  /* stack first two rows vertically */
+  .testimonial-1,
+  .testimonial-2 {
+    flex-direction: column;
+    width: 95vw;
+  }
+
+  /* cards take full width */
+  .card-1,
+  .card-2,
+  .card-3,
+  .card-4 {
+    width: 100%;
+    flex: unset;
+  }
+
+  /* reduce inside spacing */
+  .up-1,
+  .up-2 {
+    font-size: x-large;
+    padding: 1rem;
+  }
+
+  .down-1 {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .img {
+    height: 120px;
+    width: 120px;
+  }
+
+  .about {
+    text-align: center;
+  }
+
+  /* card-3 height automatically grows */
+  .testimonial-2 {
+    height: auto;
+  }
+}
+
+/* 📌 RESPONSIVE — For very small phones (max 500px) */
+@media (max-width: 500px) {
+  .testimonial {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .up-1,
+  .up-2 {
+    font-size: large;
+  }
+
+  .stars {
+    font-size: 1.5rem;
+  }
+
+  .review,
+  .review-3 {
+    font-size: large;
+  }
+
+  .img-left,
+  .img-middle,
+  .img-right {
+    width: 45px;
+    height: 45px;
+  }
+
+  .images p {
+    font-size: x-large;
+  }
+}
