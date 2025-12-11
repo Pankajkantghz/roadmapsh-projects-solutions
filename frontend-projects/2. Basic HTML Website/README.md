@@ -1,1 +1,1 @@
-Project url: https:https://roadmap.sh/projects/basic-html-website
+https:https://roadmap.sh/projects/basic-html-website
