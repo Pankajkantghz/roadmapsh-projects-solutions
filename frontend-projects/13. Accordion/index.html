@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accordion</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="accordion">
+      <!-- Accordion heading Content -->
+      <div class="accordion-heading"> 
+        <h2>Newton’s Laws of Motion</h2>
+        <p>Fundamental principles describing the motion of objects</p>
+      </div>
+
+      <!-- Accordion cards container -->
+      <div class="accordion-container">
+        <!-- Law 1 -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span class="question">Newton’s First Law (Law of Inertia)</span>
+            <span class="icon">+</span>
+          </div>
+
+          <div class="accordion-content">
+            <p>
+              An object remains at rest or continues to move with constant
+              velocity unless acted upon by an external unbalanced force.
+            </p>
+          </div>
+        </div>
+
+        <!-- Law 2 -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span class="question">Newton’s Second Law of Motion</span>
+            <span class="icon">+</span>
+          </div>
+
+          <div class="accordion-content">
+            <p>
+              The acceleration of an object is directly proportional to the net
+              force acting on it and inversely proportional to its mass.
+            </p>
+            <p><strong>Mathematically:</strong> F = ma</p>
+          </div>
+        </div>
+
+        <!-- Law 3 -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span class="question">Newton’s Third Law of Motion</span>
+            <span class="icon">+</span>
+          </div>
+
+          <div class="accordion-content">
+            <p>For every action, there is an equal and opposite reaction.</p>
+          </div>
+        </div>
+
+        <!-- Extra (Examples) -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span class="question">Real-life Examples of Newton’s Laws</span>
+            <span class="icon">+</span>
+          </div>
+
+          <div class="accordion-content">
+            <p>
+              • Seatbelts protect passengers due to inertia.<br />
+              • A heavier object needs more force to accelerate.<br />
+              • Recoil of a gun is due to action–reaction.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Random Repository</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-container">
+      <h2>GitHub Repository Finder</h2>
+      <div class="dropdown-menu">
+        <button class="select-button">
+          <span class="select-label">Select a language</span> <span>▼</span>
+        </button>
+        <ul class="select-menu">
+          <li class="list-item">JavaScript</li>
+          <li class="list-item">Python</li>
+          <li class="list-item">C++</li>
+          <li class="list-item">Java</li>
+          <li class="list-item">Rust</li>
+        </ul>
+      </div>
+      <!-- Message box (used for empty/loading/error) -->
+      <div id="empty-state" class="message">Please Select the language</div>
+      <div id="loading-state">Loading. please wait</div>
+      <div id="error-state">
+        <div id="error-state-item">Error fecting repositories</div>
+        <button id="retry-btn">Retry</button>
+      </div>
+      <!-- Repository card -->
+      <section id="repoCard" class="repository-card">
+        <h3 id="repoName">diver.js</h3>
+        <p id="repo-info">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Aspernatur
+          provident quos consectetur.
+        </p>
+        <div class="repository-meta">
+          <span id="repoLang">JavaScript</span>
+          <span id="repoStars">2442</span> <span id="repoForks">154</span>
+          <span id="repoIssues">20</span>
+        </div>
+        <button id="refresh-btn">Refresh</button>
+      </section>
+    </main>
+    <script src="scripts.js"></script>
+  </body>
+</html>

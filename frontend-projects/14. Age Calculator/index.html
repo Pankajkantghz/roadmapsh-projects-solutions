@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Age Calculator</title>
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="node_modules/js-datepicker/dist/datepicker.min.css">
+</head>
+<body>
+
+  <div class="container">
+    <h2>Age Calculator</h2>
+
+    <form id="ageForm" class="form-element">
+      <label for="birthdate">Select your birthday</label>
+
+      <div class="input-container">
+        <input
+          type="text"
+          id="birthdate"
+          placeholder="YYYY-MM-DD"
+          readonly
+        />
+    
+      </div>
+
+      <button type="submit">Calculate Age</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script src="node_modules/js-datepicker/dist/datepicker.min.js"></script>
+  <script src="node_modules/luxon/build/global/luxon.min.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>

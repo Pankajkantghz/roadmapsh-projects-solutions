@@ -1,0 +1,221 @@
+html {
+  font-size: 62.5%;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+/* default theme */
+body {
+  background: #ffffff;
+  color: #000000;
+  transition: 0.3s ease-in-out;
+}
+body.dark {
+  background-color: #121212;
+  color: white;
+}
+header{
+    border-bottom: 2px solid #ccc;
+}
+/* Dark theme  button*/
+#theme-toggle {
+  padding: 0.7rem 1.2rem;
+  border: none;
+  border-radius: 5px;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.4rem;
+}
+
+#theme-toggle:hover{
+    background: #333;
+ color: #e6e6e6;
+  font-weight: 600;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 5rem;
+
+}
+
+nav ul {
+  display: flex;
+  gap: 2.5rem;
+  list-style: none;
+  align-items: center;
+  font-size: 1.4rem;
+  margin: 0;
+  padding: 0;
+}
+nav a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 500;
+  transition: color 0.3s ease, font-weight 0.3s ease;
+}
+nav a:hover {
+  color: #7a7a7a;
+  font-weight: 600;
+}
+ul {
+  list-style: none;
+  padding: 0;
+}
+.logo {
+  text-decoration: none;
+  color: black;
+  font-weight: 500;
+  font-size: 3rem;
+}
+body.dark .logo {
+  color: #ffffff;
+}
+
+/* Main section css */
+
+.hero {
+    height:60vh;
+    font-size: xx-large;
+    text-align: center;
+    align-content: center;
+
+}
+.hero h1{
+    font-family: cursive;
+}
+ .hero p{
+    font-weight: 100;
+    color: #7a7a7a;
+
+ }
+
+ .information {
+  display: flex;
+  flex-wrap: wrap;                 
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 2rem;
+  padding: 5rem;
+  min-height: 60vh;
+}
+ 
+.information > div {
+
+  flex: 1 1 30%; 
+  min-width: 260px;  
+  box-sizing: border-box;
+  border: 2px solid #ccc;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  
+
+}
+
+
+.information  h2,
+.information h3{
+    padding: 1rem;
+
+}
+.information .projects h3{
+    text-align: left;
+    border-bottom: 2px solid #ccc;
+    padding: 1rem;
+
+}
+
+.information .education h3{
+padding: 0.5rem 1rem;
+}
+
+.information p, .information li{
+    padding: 0rem 1rem;
+    font-size: small;
+}
+
+.reviews{
+ padding: 1.5rem 5rem;;
+}
+
+.reviews h2{
+  padding-bottom: 4rem;
+  font-size: 2rem;
+}
+.reviews .review-container{
+  display:flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+}
+.review-card {
+  flex: 1 1 30%;
+  min-width: 260px;
+  border: 2px solid #ccc;
+  padding: 2rem;
+  border-radius: 2rem;  
+  box-sizing: border-box;
+  
+}
+.message , .name {
+  font-weight: 500;
+  font-size:medium;
+}
+.role{
+  font-weight: 400;
+  font-size: small;
+  color: #7a7a7a;
+}
+footer{
+ text-align: center;
+ padding: 5rem;
+  font-weight: 500;
+  font-size:medium;
+}
+
+
+
+
+
+
+
+/* Mobile screen  */
+@media (max-width: 48rem) {
+  nav {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  .routes{
+    display: flex;
+  }
+
+  .information{
+    flex-direction: column;
+    padding: 2.5rem;
+    min-height: auto;
+  }
+  .information > div {
+    flex: 1 1 100%;
+  }
+}
+
+/* Tablet */
+@media (max-width:62rem) {
+   .information > div {
+        flex: 1 1 45%;
+    }
+     .review-card{
+    flex: 1 1 50%;
+  }
+}
+
+
+ 

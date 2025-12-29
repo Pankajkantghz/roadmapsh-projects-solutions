@@ -1,0 +1,145 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  margin: 5rem;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-container,
+.select-menu,
+.repository-card,
+#empty-state,
+#error-state-item,
+#loading-state {
+  display: flex;
+  border: 2px solid gray;
+  border-radius: 10px;
+}
+
+.app-container {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40vw;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.dropdown-menu {
+  width: 100%;
+  position: relative;
+}
+
+.select-button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem;
+  background: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.select-menu {
+  width: 100%;
+  list-style: none;
+  flex-direction: column;
+  cursor: pointer;
+  z-index: 9999;
+  background-color: #f0f0f0;
+  position: absolute;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+}
+
+.list-item:hover {
+  background: gray;
+}
+
+#empty-state,
+#loading-state {
+  width: 100%;
+  height: 20vh;
+  background: rgb(224, 221, 221);
+  justify-content: center;
+  align-items: center;
+}
+
+#loading-state {
+  display: none;
+}
+
+#error-state {
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#error-state-item {
+  width: 100%;
+  height: 20vh;
+  color: #f0f0f0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgb(228, 141, 141);
+}
+
+#retry-btn,
+#refresh-btn {
+  width: 100%;
+  border: none;
+  color: #f0f0f0;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+#retry-btn {
+  background-color: rgb(171, 82, 82);
+}
+
+#refresh-btn {
+  background-color: black;
+}
+
+#retry-btn:hover,
+#refresh-btn:hover {
+  opacity: 0.5;
+}
+
+.repository-card {
+  width: 100%;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.repository-meta {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+}
+
+.fork-icon {
+  color: black;
+}

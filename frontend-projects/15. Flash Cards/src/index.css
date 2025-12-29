@@ -1,0 +1,9 @@
+@import "tailwindcss"; 
+@import "tailwindcss";
+
+/* FORCE Tailwind to generate the class */
+.font-hand {
+  font-family: "Patrick Hand", cursive;
+}
+
+
