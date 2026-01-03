@@ -60,11 +60,11 @@ body {
   gap: 1rem;
   padding: 1rem;
   overflow-x: auto;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   flex: 1;
 }
 .lane {
-  min-width: 340px;
+  min-width: 365px;
   border-radius: 10px;
   border: var(--border);
   background: var(--surface-color);
