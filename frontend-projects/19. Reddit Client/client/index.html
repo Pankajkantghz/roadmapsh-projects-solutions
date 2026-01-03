@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Multi-Lane Reddit Client</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Reddit Client</h1>
+      <button id="addLaneBtn" class="add-btn">+</button>
+    </header>
+
+    <main id="laneContainer" class="lanes"></main>
+
+    <div id="modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Add Subreddit</h3>
+        <input id="subredditInput" placeholder="Enter Subreddit" />
+        <button id="confirmAdd">Add</button>
+      </div>
+    </div>
+
+    <script src="scripts.js" defer></script>
+  </body>
+</html>
