@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <!-- SEARCH -->
+      <section class="search-section">
+        <h1 class="app-title">Weather Forecast</h1>
+        <p class="app-subtitle">Search a city or use your location</p>
+
+        <div class="search-bar">
+          <input
+            type="text"
+            class="location-input"
+            placeholder="Enter city name"
+            autocomplete="off"
+          />
+          <button class="search-button">Search</button>
+        </div>
+
+        <div id="suggestions" class="suggestions"></div>
+      </section>
+
+      <!-- CURRENT WEATHER -->
+      <section class="current-weather hidden">
+        <p class="loading-text">Fetching weather...</p>
+
+        <div class="weather-main">
+          <h2 class="weather-location"></h2>
+          <h1 class="weather-temperature"></h1>
+          <p class="weather-condition"></p>
+        </div>
+
+        <div class="weather-details">
+          <button class="refresh-button">⟳</button>
+          <p class="wind-speed"></p>
+          <p class="rain-chance"></p>
+          <p class="air-quality"></p>
+        </div>
+      </section>
+
+      <!-- HOURLY -->
+      <section class="hourly-forecast">
+        <h3 class="hourly-title">Next 24 Hours</h3>
+        <div class="hourly-list"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

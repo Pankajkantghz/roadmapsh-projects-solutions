@@ -1,0 +1,231 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+
+  background: radial-gradient(60% 40% at 50% 0%, #2a2f38 0%, transparent 60%),
+    linear-gradient(180deg, #0e0f13, #12141a);
+}
+
+.app {
+  width: 100%;
+  max-width: 40rem;
+  padding: 2rem;
+  border-radius: 1.25rem;
+
+  background: rgba(32, 36, 43, 0.7);
+  backdrop-filter: blur(1.25rem);
+
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.6),
+    inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.06);
+}
+
+.search-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.app-title {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app-subtitle {
+  font-size: 1.125rem;
+  color: #9aa0a6;
+}
+
+.search-bar {
+  display: flex;
+  gap: 1rem;
+}
+
+.location-input {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.0625rem solid rgba(255, 255, 255, 0.08);
+
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.location-input::placeholder {
+  color: #9aa0a6;
+}
+
+.location-input:focus {
+  border-color: #4facfe;
+  box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.15);
+}
+
+.search-button {
+  padding: 0.9rem 1.25rem;
+  border-radius: 0.75rem;
+  border: none;
+
+  background: linear-gradient(135deg, #505457, #1d2020);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-button:hover {
+  transform: translateY(-0.0625rem);
+  box-shadow: 0 0.5rem 1.25rem rgba(79, 172, 254, 0.35);
+}
+
+
+
+.current-weather {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
+}
+
+.weather-location {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.weather-temperature {
+  font-size: 3.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.weather-condition {
+  font-size: 0.95rem;
+  color: #cfd3d8;
+}
+
+.weather-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.refresh-button {
+  align-self: flex-end;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: none;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: rotate(90deg);
+}
+
+/* ============================= */
+/* HOURLY FORECAST */
+/* ============================= */
+.hourly-forecast {
+  margin-top: 1.5rem;
+}
+
+.hourly-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.hourly-list {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.hour-card {
+  min-width: 4.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  text-align: center;
+
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.85rem;
+}
+
+.hourly-list::-webkit-scrollbar {
+  height: 0.25rem;
+}
+
+.hourly-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 1rem;
+}
+
+@media (max-width: 30rem) {
+  .current-weather {
+    flex-direction: column;
+  }
+  .weather-temperature {
+    font-size: 2.75rem;
+  }
+}
+
+.suggestions {
+  background: rgba(32, 36, 43, 0.95);
+  border-radius: 0.75rem;
+  margin-top: 0.5rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  color: #fff;
+}
+
+.suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
