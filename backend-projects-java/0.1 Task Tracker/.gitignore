@@ -1,0 +1,11 @@
+# Compiled Java files
+*.class
+
+# Libraries
+lib/*.jar
+
+# VS Code settings
+.vscode/
+
+# App data
+todo.json
