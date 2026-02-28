@@ -6,8 +6,8 @@ const totalDisplay = document.getElementById("total-time");
 
 let intervalId = null;
 let totalSecondsToday = 0;
-let remainingSeconds = 0;
 let originalSessionSeconds = 0;
+let endTime = null;
 
 /* ---------------- REQUEST NOTIFICATION PERMISSION ---------------- */
 
@@ -21,7 +21,7 @@ function getTodayDate() {
     return new Date().toISOString().split("T")[0];
 }
 
-/* ---------------- FORMAT TIME (HH:MM:SS) ---------------- */
+/* ---------------- FORMAT TIME ---------------- */
 
 function formatTime(totalSeconds) {
     const hours = Math.floor(totalSeconds / 3600);
@@ -35,7 +35,7 @@ function formatTime(totalSeconds) {
     );
 }
 
-/* ---------------- BEEP SOUND (REAL SOUND) ---------------- */
+/* ---------------- BEEP SOUND ---------------- */
 
 function playBeep(duration = 500, frequency = 800) {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -65,9 +65,7 @@ function playBeep(duration = 500, frequency = 800) {
 
 function showNotification(title, message) {
     if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(title, {
-            body: message
-        });
+        new Notification(title, { body: message });
     }
 }
 
@@ -113,19 +111,16 @@ start.addEventListener("click", () => {
     clearInterval(intervalId);
 
     originalSessionSeconds = minutes * 60;
-    remainingSeconds = originalSessionSeconds;
-
-    time.innerText = formatTime(remainingSeconds);
+    endTime = Date.now() + originalSessionSeconds * 1000;
 
     showNotification("Timer Started", "Focus session started.");
-    playBeep(200, 600); // soft start sound
-
+    playBeep(200, 600);
     if (navigator.vibrate) navigator.vibrate(100);
 
     intervalId = setInterval(() => {
 
-        remainingSeconds--;
-        time.innerText = formatTime(remainingSeconds);
+        const remainingMs = endTime - Date.now();
+        const remainingSeconds = Math.ceil(remainingMs / 1000);
 
         if (remainingSeconds <= 0) {
             clearInterval(intervalId);
@@ -137,10 +132,13 @@ start.addEventListener("click", () => {
             time.innerText = "Time's Up!";
 
             showNotification("Time's Up!", "Session completed!");
-
-            playBeep(800, 900); // strong end beep
+            playBeep(800, 900);
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+            return;
         }
+
+        time.innerText = formatTime(remainingSeconds);
 
     }, 1000);
 });
@@ -149,8 +147,12 @@ start.addEventListener("click", () => {
 
 stop.addEventListener("click", () => {
 
+    if (!endTime) return;
+
     clearInterval(intervalId);
 
+    const remainingMs = endTime - Date.now();
+    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
     const studiedSeconds = originalSessionSeconds - remainingSeconds;
 
     if (studiedSeconds > 0) {
@@ -163,8 +165,9 @@ stop.addEventListener("click", () => {
 
     showNotification("Timer Stopped", "Session stopped.");
     playBeep(300, 500);
-
     if (navigator.vibrate) navigator.vibrate(150);
+
+    endTime = null;
 });
 
 /* ---------------- INIT ---------------- */
