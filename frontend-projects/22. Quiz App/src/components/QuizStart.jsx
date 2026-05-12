@@ -15,10 +15,10 @@ const QuizStart = ({ onStart, totalQuestions }) => {
         </h2>
 
         <ul className="space-y-2 text-gray-700">
-          <li>✅ {totalQuestions} Questions</li>
-          <li>✅ 60 Seconds Per Question</li>
-          <li>✅ Instant Feedback</li>
-          <li>✅ Final Score Summary</li>
+          <li>{totalQuestions} Questions</li>
+          <li>60 Seconds Per Question</li>
+          <li>Instant Feedback</li>
+          <li>Final Score Summary</li>
         </ul>
       </div>
 
