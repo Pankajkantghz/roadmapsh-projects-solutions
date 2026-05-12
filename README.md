@@ -5,3 +5,4 @@ https://roadmap.sh/projects/weather-app
 https://roadmap.sh/projects/task-tracker
 https://roadmap.sh/projects/github-user-activity
 https://roadmap.sh/projects/pomodoro-timer
+https://roadmap.sh/projects/quiz-app
