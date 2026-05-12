@@ -5,3 +5,4 @@
 - flash card: https://flash-cards-flame-delta.vercel.app/
 - Pomodoro Clock: https://pomodoro-clock-vns.netlify.app/
 - Weather App: https://weather-projects-solutions.vercel.app/
+- Quiz App: https://quiz-app-zo8y.vercel.app/
