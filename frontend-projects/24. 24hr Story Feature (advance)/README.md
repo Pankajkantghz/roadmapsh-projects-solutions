@@ -1,3 +1,7 @@
+<img width="1333" height="625" alt="image" src="https://github.com/user-attachments/assets/1c1ccd26-11b2-4b58-a6aa-09ff45582f3e" />
+![Uploading image.png…]()
+
+
 # 24hr Story Feature
 
 A modern and elegant Story Feature inspired by Instagram, Snapchat, and WhatsApp built using React, Redux Toolkit, Tailwind CSS, and Vite.
