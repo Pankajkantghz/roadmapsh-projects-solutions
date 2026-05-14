@@ -1,5 +1,7 @@
 <img width="1333" height="625" alt="image" src="https://github.com/user-attachments/assets/1c1ccd26-11b2-4b58-a6aa-09ff45582f3e" />
-![Uploading image.png…]()
+
+<img width="1350" height="931" alt="image" src="https://github.com/user-attachments/assets/18886320-91cf-4637-a7fc-a3713c9c285f" />
+
 
 
 # 24hr Story Feature
