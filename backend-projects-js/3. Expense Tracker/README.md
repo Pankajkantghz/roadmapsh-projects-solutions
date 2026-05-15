@@ -1,7 +1,8 @@
 # Expense Tracker CLI
 
 ![alt text](image.png)
-A simple command-line expense tracker application built with Node.js to manage personal finances.
+
+### A simple command-line expense tracker application built with Node.js to manage personal finances.
 
 Users can:
 
