@@ -1,6 +1,6 @@
 # 🚀 Unit Converter App
 
-![System Design](sample.png)
+![System Design](system-design.png)
 
 A full-stack **Unit Converter Web Application** built using **React, Express.js, and REST APIs**.
 
