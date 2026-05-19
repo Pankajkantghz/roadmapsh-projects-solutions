@@ -1,6 +1,6 @@
 # 🚀 Unit Converter App
 
-![System Design](./ChatGPT%20Image%20May%2019,%202026,%2004_23_17%20PM.png)
+![System Design](sample.png)
 
 A full-stack **Unit Converter Web Application** built using **React, Express.js, and REST APIs**.
 
@@ -16,7 +16,7 @@ The application allows users to instantly convert units across different categor
 
 ## 🌐 Live Demo
 
-![Application Preview](./image.png)
+![Application Preview](./sample.png)
 
 ### Frontend
 
