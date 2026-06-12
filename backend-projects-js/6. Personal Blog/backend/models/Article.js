@@ -87,13 +87,10 @@ const articleSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-
-      enum: ["draft", "published", "archived"],
-
+      enum: ["draft", "published", "hidden", "blocked"],
       default: "draft",
-
-      index: true,
     },
+
     readingTime: {
       type: String,
 

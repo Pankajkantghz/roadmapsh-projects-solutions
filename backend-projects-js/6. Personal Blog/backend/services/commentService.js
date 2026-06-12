@@ -1,5 +1,18 @@
 import Comment from "../models/Comment.js";
+import Article from "../models/Article.js";
 import ApiError from "../utils/ApiError.js";
+
+const COMMENT_POPULATE_FIELDS = "name";
+
+const validateOwnership = (comment, userId, role = null) => {
+  const isOwner = comment.user.toString() === userId.toString();
+
+  const isAdmin = role === "admin";
+
+  if (!isOwner && !isAdmin) {
+    throw new ApiError(403, "You are not authorized");
+  }
+};
 
 export const createCommentService = async (
   articleId,
@@ -7,52 +20,71 @@ export const createCommentService = async (
   content,
   parentComment = null,
 ) => {
-  return await Comment.create({
+  const article = await Article.findById(articleId);
+
+  if (!article) {
+    throw new ApiError(404, "Article not found");
+  }
+
+  const comment = await Comment.create({
     article: articleId,
-
     user: userId,
-
     content,
-
     parentComment,
   });
+
+  return await comment.populate("user", COMMENT_POPULATE_FIELDS);
 };
+
 export const getCommentsService = async (articleId) => {
+  const article = await Article.findById(articleId);
+
+  if (!article) {
+    throw new ApiError(404, "Article not found");
+  }
+
   const comments = await Comment.find({
     article: articleId,
-
     parentComment: null,
-
     isDeleted: false,
   })
     .select("-__v")
-
-    .populate("user", "name")
-
+    .populate("user", COMMENT_POPULATE_FIELDS)
     .sort({
       createdAt: -1,
     })
-
     .lean();
 
-  for (const comment of comments) {
-    const replies = await Comment.find({
-      parentComment: comment._id,
+  const commentIds = comments.map((comment) => comment._id);
 
-      isDeleted: false,
+  const replies = await Comment.find({
+    parentComment: {
+      $in: commentIds,
+    },
+    isDeleted: false,
+  })
+    .select("-__v")
+    .populate("user", COMMENT_POPULATE_FIELDS)
+    .sort({
+      createdAt: 1,
     })
-      .select("-__v")
+    .lean();
 
-      .populate("user", "name")
+  const repliesMap = {};
 
-      .sort({
-        createdAt: 1,
-      })
+  replies.forEach((reply) => {
+    const parentId = reply.parentComment.toString();
 
-      .lean();
+    if (!repliesMap[parentId]) {
+      repliesMap[parentId] = [];
+    }
 
-    comment.replies = replies;
-  }
+    repliesMap[parentId].push(reply);
+  });
+
+  comments.forEach((comment) => {
+    comment.replies = repliesMap[comment._id.toString()] || [];
+  });
 
   return comments;
 };
@@ -63,17 +95,13 @@ export const updateCommentService = async (id, userId, content) => {
   if (!comment) {
     return null;
   }
-  if (comment.user.toString() !== userId.toString()) {
-    throw new ApiError(
-      403,
 
-      "You are not authorized",
-    );
-  }
+  validateOwnership(comment, userId);
 
   comment.content = content;
 
   await comment.save();
+
   return comment;
 };
 
@@ -84,21 +112,32 @@ export const deleteCommentService = async (id, userId, role) => {
     return null;
   }
 
-  const isOwner = comment.user.toString() === userId.toString();
+  validateOwnership(comment, userId, role);
 
-  const isAdmin = role === "admin";
-
-  if (!isOwner && !isAdmin) {
-    throw new ApiError(
-      403,
-
-      "You are not authorized",
-    );
-  }
   comment.isDeleted = true;
+
   comment.deletedAt = new Date();
 
   await comment.save();
 
-  return true;
+  return comment;
+};
+
+export const replyToCommentService = async (
+  parentCommentId,
+  userId,
+  content,
+) => {
+  const parentComment = await Comment.findById(parentCommentId);
+
+  if (!parentComment) {
+    throw new ApiError(404, "Comment not found");
+  }
+
+  return await createCommentService(
+    parentComment.article,
+    userId,
+    content,
+    parentCommentId,
+  );
 };

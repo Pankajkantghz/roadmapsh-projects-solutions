@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema(
 
       default: "user",
     },
+    accountStatus: {
+      type: String,
+      enum: ["active", "suspended", "banned"],
+      default: "active",
+    },
     password: {
       type: String,
 
@@ -107,6 +112,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    
   },
   {
     timestamps: true,

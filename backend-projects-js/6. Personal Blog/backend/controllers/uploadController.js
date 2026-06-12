@@ -1,11 +1,13 @@
 import cloudinary from "../config/cloudinary.js";
+import streamifier from "streamifier";
+
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/apiResponse.js";
-import streamifier from "streamifier";
+import ApiError from "../utils/ApiError.js";
 
 export const uploadImage = asyncHandler(async (req, res) => {
   if (!req.file) {
-    throw new Error("Image is required");
+    throw new ApiError(400, "Image is required");
   }
 
   const result = await new Promise((resolve, reject) => {

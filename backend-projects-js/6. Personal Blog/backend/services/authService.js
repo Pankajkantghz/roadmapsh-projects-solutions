@@ -3,7 +3,10 @@ import bcrypt from "bcrypt";
 import ApiError from "../utils/ApiError.js";
 import generateOTP from "../utils/generateOTP.js";
 import sendEmail from "../utils/sendEmail.js";
-import { unlockOTPTemplate, verificationEmailTemplate } from "../utils/emailTemplate.js";
+import {
+  unlockOTPTemplate,
+  verificationEmailTemplate,
+} from "../utils/emailTemplate.js";
 
 export const signupService = async (name, email, password) => {
   const existingUser = await User.findOne({
@@ -48,11 +51,13 @@ export const signupService = async (name, email, password) => {
     );
   }
 
-  // Create new user
+  const role = email === process.env.ADMIN_EMAIL ? "admin" : "user";
+
   const user = await User.create({
     name,
     email,
     password,
+    role,
   });
 
   return user;
@@ -132,4 +137,26 @@ export const loginService = async (email, password) => {
   await user.save();
 
   return user;
+};
+
+export const updateProfileService = async (userId, name) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  user.name = name;
+
+  await user.save();
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    accountStatus: user.accountStatus,
+    bookmarksCount: user.bookmarks?.length || 0,
+    updatedAt: user.updatedAt,
+  };
 };

@@ -1,4 +1,4 @@
-import { loginService, signupService } from "../services/authService.js";
+import { loginService, signupService, updateProfileService } from "../services/authService.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import ApiResponse from "../utils/apiResponse.js";
@@ -9,7 +9,10 @@ import jwt from "jsonwebtoken";
 import generateOTP from "../utils/generateOTP.js";
 import sendEmail from "../utils/sendEmail.js";
 import bcrypt from "bcrypt";
-import { forgotPasswordTemplate, verificationEmailTemplate } from "../utils/emailTemplate.js";
+import {
+  forgotPasswordTemplate,
+  verificationEmailTemplate,
+} from "../utils/emailTemplate.js";
 
 export const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -160,11 +163,21 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 
   const safeUser = {
     _id: user._id,
+
     name: user.name,
+
     email: user.email,
+
     role: user.role,
+
+    accountStatus: user.accountStatus,
+
+    isVerified: user.isVerified,
+
     bookmarksCount: user.bookmarks?.length || 0,
+
     createdAt: user.createdAt,
+
     updatedAt: user.updatedAt,
   };
 
@@ -233,10 +246,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  await sendEmail(
-  user.email,
-  forgotPasswordTemplate(otp)
-);
+  await sendEmail(user.email, forgotPasswordTemplate(otp));
 
   res.status(200).json(new ApiResponse(200, null, "OTP sent successfully"));
 });
@@ -438,4 +448,14 @@ export const resendUnlockOTP = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json(new ApiResponse(200, null, "OTP resent successfully"));
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { name } = req.body;
+
+  const user = await updateProfileService(req.user._id, name);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Profile updated successfully"));
 });

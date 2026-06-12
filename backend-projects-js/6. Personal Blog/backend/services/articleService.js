@@ -2,13 +2,72 @@ import Article from "../models/Article.js";
 import Comment from "../models/Comment.js";
 import ApiError from "../utils/ApiError.js";
 
-export const createArticleService = async (data) => {
-  const article = await Article.create({
+const ARTICLE_SELECT_FIELDS = `
+  title
+  slug
+  excerpt
+  category
+  tags
+  views
+  status
+  readingTime
+  publishedAt
+  createdAt
+  updatedAt
+  likes
+  dislikes
+`;
+
+const PUBLIC_ARTICLE_FIELDS = `
+  title
+  slug
+  category
+  tags
+  views
+  readingTime
+  createdAt
+  publishedAt
+  excerpt
+`;
+
+const RECOMMENDED_ARTICLE_FIELDS = `
+  title
+  slug
+  excerpt
+  category
+  tags
+  views
+  readingTime
+  createdAt
+`;
+
+const formatArticleStats = (article) => {
+  const { likes, dislikes, ...safeArticle } = article;
+
+  return {
+    ...safeArticle,
+
+    totalLikes: likes?.length || 0,
+
+    totalDislikes: dislikes?.length || 0,
+  };
+};
+
+const validateOwnership = (article, userId, role = null) => {
+  const isOwner = article.author.toString() === userId.toString();
+
+  const isAdmin = role === "admin";
+
+  if (!isOwner && !isAdmin) {
+    throw new ApiError(403, "You are not authorized");
+  }
+};
+
+export const createArticleService = async (data) =>
+  Article.create({
     ...data,
     tags: data.tags || [],
   });
-  return article;
-};
 
 export const getAllArticlesService = async (
   page,
@@ -80,18 +139,7 @@ export const getAllArticlesService = async (
 
   const articles = await Article.find(filter)
 
-    .select(
-      `
-  title
-  slug
-  category
-  tags
-  views
-  readingTime
-  createdAt
-  publishedAt
-  `,
-    )
+    .select(PUBLIC_ARTICLE_FIELDS)
     .populate("author", "name")
 
     .sort(sortOption)
@@ -102,37 +150,47 @@ export const getAllArticlesService = async (
 
     .lean();
 
+  const updatedArticles = articles.map(formatArticleStats);
+
   return {
-    articles,
+    articles: updatedArticles,
 
     totalArticles,
 
-    totalPages: Math.ceil(totalArticles / limit),
+    totalPages: Math.max(1, Math.ceil(totalArticles / limit)),
 
     currentPage: page,
   };
 };
 
-export const getSingleArticleService = async (id) => {
+export const getSingleArticleService = async (slug) => {
   const article = await Article.findOne({
-    slug: id,
+    slug,
 
     status: "published",
   })
-
-    .populate("author", "name email")
-
-    .select("-__v");
+    .populate("author", "name")
+    .select("-__v")
+    .lean();
 
   if (!article) {
     return null;
   }
 
-  article.views = (article.views || 0) + 1;
+  // Increment views
+  await Article.findByIdAndUpdate(article._id, {
+    $inc: {
+      views: 1,
+    },
+  });
 
-  await article.save();
+  const formattedArticle = formatArticleStats(article);
 
-  return article;
+  return {
+    ...formattedArticle,
+
+    views: article.views + 1,
+  };
 };
 
 export const updateArticleService = async (id, data, userId) => {
@@ -142,18 +200,23 @@ export const updateArticleService = async (id, data, userId) => {
     return null;
   }
 
-  const isOwner = article.author.toString() === userId.toString();
+  validateOwnership(article, userId);
 
-  if (!isOwner) {
-    throw new ApiError(403, "You are not authorized");
-  }
+  const allowedUpdates = ["title", "content", "category", "tags", "status"];
 
-  return await Article.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  })
-    .select("-__v")
+  allowedUpdates.forEach((field) => {
+    if (data[field] !== undefined) {
+      article[field] = data[field];
+    }
+  });
+
+  await article.save();
+
+  const updatedArticle = await Article.findById(id)
+    .populate("author", "name")
     .lean();
+
+  return formatArticleStats(updatedArticle);
 };
 
 export const deleteArticleService = async (id, userId, role) => {
@@ -163,24 +226,22 @@ export const deleteArticleService = async (id, userId, role) => {
     return null;
   }
 
-  const isOwner = article.author.toString() === userId.toString();
-
-  const isAdmin = role === "admin";
-
-  if (!isOwner && !isAdmin) {
-    throw new ApiError(403, "You are not authorized");
-  }
+  validateOwnership(article, userId, role);
 
   return await Article.findByIdAndDelete(id).select("-__v").lean();
 };
 
 export const getMyArticlesService = async (userId) => {
-  const articles = await Article.find({ author: userId })
-    .select("-__v")
-    .sort({ createdAt: -1 })
+  const articles = await Article.find({
+    author: userId,
+  })
+    .select(ARTICLE_SELECT_FIELDS)
+    .sort({
+      createdAt: -1,
+    })
     .lean();
 
-  return articles;
+  return articles.map(formatArticleStats);
 };
 
 export const getTrendingArticlesService = async (period = "today") => {
@@ -195,51 +256,75 @@ export const getTrendingArticlesService = async (period = "today") => {
   }
 
   const articles = await Article.find({
+    status: "published",
+
     createdAt: {
       $gte: date,
     },
-  });
+  })
+    .populate("author", "name")
+    .lean();
 
-  const trending = articles.map((article) => {
-    const likes = article.likes?.length || 0;
+  const trending = await Promise.all(
+    articles.map(async (article) => {
+      const likes = article.likes?.length || 0;
 
-    const dislikes = article.dislikes?.length || 0;
+      const dislikes = article.dislikes?.length || 0;
 
-    const views = article.views || 0;
+      const views = article.views || 0;
 
-    const hoursOld =
-      (Date.now() - new Date(article.createdAt)) / (1000 * 60 * 60);
+      const commentCount = await Comment.countDocuments({
+        article: article._id,
 
-    const freshness = Math.max(20 - hoursOld * 0.5, 0);
+        isDeleted: false,
+      });
 
-    const trendingScore = Number(
-      (likes * 4 + views * 0.3 - dislikes * 3 + freshness).toFixed(2),
-    );
+      const hoursOld =
+        (Date.now() - new Date(article.createdAt)) / (1000 * 60 * 60);
 
-    return {
-      _id: article._id,
+      const freshness = Math.max(20 - hoursOld * 0.5, 0);
 
-      title: article.title,
+      const trendingScore = Number(
+        (
+          likes * 4 +
+          commentCount * 2 +
+          views * 0.3 -
+          dislikes * 3 +
+          freshness
+        ).toFixed(2),
+      );
 
-      content: article.content,
+      return {
+        _id: article._id,
 
-      category: article.category,
+        title: article.title,
 
-      tags: article.tags,
+        slug: article.slug,
 
-      author: article.author,
+        excerpt: article.excerpt,
 
-      views: views,
+        category: article.category,
 
-      totalLikes: likes,
+        tags: article.tags,
 
-      totalDislikes: dislikes,
+        author: article.author,
 
-      trendingScore,
+        views,
 
-      createdAt: article.createdAt,
-    };
-  });
+        readingTime: article.readingTime,
+
+        totalLikes: likes,
+
+        totalDislikes: dislikes,
+
+        totalComments: commentCount,
+
+        trendingScore,
+
+        createdAt: article.createdAt,
+      };
+    }),
+  );
 
   return trending
     .sort((a, b) => b.trendingScore - a.trendingScore)
@@ -258,6 +343,8 @@ export const getRecommendedArticlesService = async (id) => {
       $ne: id,
     },
 
+    status: "published",
+
     $or: [
       {
         category: currentArticle.category,
@@ -271,13 +358,13 @@ export const getRecommendedArticlesService = async (id) => {
     ],
   })
 
-    .select("title category tags views createdAt")
-
+    .select(RECOMMENDED_ARTICLE_FIELDS)
     .sort({
       views: -1,
     })
 
-    .limit(5);
+    .limit(5)
+    .lean();
 
   return articles;
 };
@@ -289,11 +376,7 @@ export const changeArticleStatusService = async (id, status, userId) => {
     return null;
   }
 
-  const isOwner = article.author.toString() === userId.toString();
-
-  if (!isOwner) {
-    throw new ApiError(403, "You are not authorized");
-  }
+  validateOwnership(article, userId);
 
   article.status = status;
 
@@ -315,13 +398,7 @@ export const getArticleAnalyticsService = async (slug, userId, role) => {
     return null;
   }
 
-  const isOwner = article.author.toString() === userId.toString();
-
-  const isAdmin = role === "admin";
-
-  if (!isOwner && !isAdmin) {
-    throw new ApiError(403, "You are not authorized");
-  }
+  validateOwnership(article, userId, role);
 
   const commentCount = await Comment.countDocuments({
     article: article._id,
@@ -331,27 +408,30 @@ export const getArticleAnalyticsService = async (slug, userId, role) => {
     },
   });
 
-  const likes = article.likes?.length || 0;
+  const totalLikes = article.likes?.length || 0;
 
-  const dislikes = article.dislikes?.length || 0;
+  const totalDislikes = article.dislikes?.length || 0;
 
-  const views = article.views || 0;
+  const totalViews = article.views || 0;
 
-  const engagementRate = views > 0 ? ((likes + commentCount) / views) * 100 : 0;
+  const engagementRate =
+    totalViews > 0
+      ? `${(((totalLikes + commentCount) / totalViews) * 100).toFixed(2)}%`
+      : "N/A";
 
   return {
     title: article.title,
 
     slug: article.slug,
 
-    views,
+    views: totalViews,
 
-    likes,
+    likes: totalLikes,
 
-    dislikes,
+    dislikes: totalDislikes,
 
     comments: commentCount,
 
-    engagementRate: `${engagementRate.toFixed(2)}%`,
+    engagementRate,
   };
 };

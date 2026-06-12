@@ -1,5 +1,3 @@
-import Article from "../models/Article.js";
-
 import {
   changeArticleStatusService,
   createArticleService,
@@ -12,59 +10,19 @@ import {
   getTrendingArticlesService,
   updateArticleService,
 } from "../services/articleService.js";
+
+import { toggleReaction } from "../services/reactionService.js";
+
+import {
+  getBookmarksService,
+  toggleBookmarkService,
+} from "../services/bookmarkService.js";
+
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
-
-
-
-const toggleReaction = async (articleId, userId, action) => {
-  const article = await Article.findById(articleId);
-
-  if (!article) {
-    throw new ApiError(404, "Article not found");
-  }
-
-  const userIdStr = userId.toString();
-
-  const likes = article.likes || [];
-
-  const dislikes = article.dislikes || [];
-
-  const alreadyLiked = likes.some((id) => id.toString() === userIdStr);
-
-  const alreadyDisliked = dislikes.some((id) => id.toString() === userIdStr);
-
-  if (action === "like") {
-    if (alreadyLiked) {
-      article.likes = likes.filter((id) => id.toString() !== userIdStr);
-    } else {
-      article.likes.push(userIdStr);
-
-      article.dislikes = dislikes.filter((id) => id.toString() !== userIdStr);
-    }
-  }
-
-  if (action === "dislike") {
-    if (alreadyDisliked) {
-      article.dislikes = dislikes.filter((id) => id.toString() !== userIdStr);
-    } else {
-      article.dislikes.push(userIdStr);
-
-      article.likes = likes.filter((id) => id.toString() !== userIdStr);
-    }
-  }
-
-  await article.save();
-
-  return {
-    likes: article.likes.length,
-
-    dislikes: article.dislikes.length,
-
-    isLiked: article.likes.some((id) => id.toString() === userIdStr),
-
-    isDisliked: article.dislikes.some((id) => id.toString() === userIdStr),
-  };
-};
+import Article from "../models/Article.js";
+import User from "../models/User.js";
 
 export const createArticle = asyncHandler(async (req, res) => {
   const article = await createArticleService({
@@ -219,7 +177,15 @@ export const likeArticle = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, result, "Article liked successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        result,
+        result.isLiked
+          ? "Article liked successfully"
+          : "Like removed successfully",
+      ),
+    );
 });
 
 export const dislikeArticle = asyncHandler(async (req, res) => {
@@ -227,11 +193,28 @@ export const dislikeArticle = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, result, "Article disliked successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        result,
+        result.isDisliked
+          ? "Article disliked successfully"
+          : "Dislike removed successfully",
+      ),
+    );
 });
 
 export const getTrendingArticles = asyncHandler(async (req, res) => {
   const { period } = req.query;
+
+  const allowedPeriods = ["today", "week", "month"];
+
+  if (period && !allowedPeriods.includes(period)) {
+    throw new ApiError(
+      400,
+      "Invalid period. Allowed values: today, week, month",
+    );
+  }
 
   const articles = await getTrendingArticlesService(period);
 
@@ -247,78 +230,27 @@ export const getTrendingArticles = asyncHandler(async (req, res) => {
 });
 
 export const toggleBookmark = asyncHandler(async (req, res) => {
-  const article = await Article.findById(req.params.id);
+  const result = await toggleBookmarkService(req.params.id, req.user._id);
 
-  if (!article) {
-    throw new ApiError(
-      404,
-
-      "Article not found",
-    );
-  }
-
-  const user = await User.findById(req.user._id);
-
-  const alreadyBookmarked = user.bookmarks.some(
-    (id) => id.toString() === req.params.id,
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        isBookmarked: result.isBookmarked,
+        totalBookmarks: result.totalBookmarks,
+      },
+      result.message,
+    ),
   );
+});
 
-  if (alreadyBookmarked) {
-    user.bookmarks = user.bookmarks.filter(
-      (id) => id.toString() !== req.params.id,
-    );
-  } else {
-    user.bookmarks.push(req.params.id);
-  }
-
-  await user.save();
+export const getBookmarks = asyncHandler(async (req, res) => {
+  const bookmarks = await getBookmarksService(req.user._id);
 
   res
     .status(200)
-
-    .json(
-      new ApiResponse(
-        200,
-
-        {
-          isBookmarked: !alreadyBookmarked,
-
-          totalBookmarks: user.bookmarks.length,
-        },
-
-        alreadyBookmarked ? "Bookmark removed" : "Article bookmarked",
-      ),
-    );
+    .json(new ApiResponse(200, bookmarks, "Bookmarks fetched successfully"));
 });
-
-export const getBookmarks = asyncHandler(
-  async (
-    req,
-
-    res,
-  ) => {
-    const user = await User.findById(req.user._id)
-
-      .populate({
-        path: "bookmarks",
-
-        select: "-__v",
-      });
-
-    res
-      .status(200)
-
-      .json(
-        new ApiResponse(
-          200,
-
-          user.bookmarks,
-
-          "Bookmarks fetched successfully",
-        ),
-      );
-  },
-);
 
 export const getRecommendedArticles = asyncHandler(async (req, res) => {
   const { id } = req.params;
