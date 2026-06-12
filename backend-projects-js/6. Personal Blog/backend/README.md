@@ -1,5 +1,5 @@
 # Personal Blog API 🚀
-
+![System Design](system-design.png)
 A **production-ready RESTful Blog API** built with **Node.js, Express.js, MongoDB, and JWT Authentication**.
 
 This project includes secure authentication, article management, comments, bookmarks, analytics, admin moderation tools, file uploads, and Swagger API documentation.
