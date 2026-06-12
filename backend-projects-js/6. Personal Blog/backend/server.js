@@ -29,18 +29,25 @@ app.set("trust proxy", 1); // Crucial for hosting behind reverse proxies (Render
 app.use(helmet());
 app.use(compression());
 
-// 2. CORS 
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(",") 
-  : ["http://localhost:3000", "http://localhost:5173"];
+// 2. CORS
+// const allowedOrigins = process.env.ALLOWED_ORIGINS
+//   ? process.env.ALLOWED_ORIGINS.split(",")
+//   : ["http://localhost:3000", "http://localhost:5173"];
+
+// app.use(
+//   cors({
+//     origin: allowedOrigins,
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: true,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 // 3. Request Parsing & Logging
@@ -65,8 +72,8 @@ app.get("/", (req, res) => {
 
 // 7. API Routes Mapping
 app.use(`${API_VERSION}/auth`, authRoutes);
-app.use(`${API_VERSION}/articles`, articleRoutes); 
-app.use(`${API_VERSION}/comments`, commentRoutes); 
+app.use(`${API_VERSION}/articles`, articleRoutes);
+app.use(`${API_VERSION}/comments`, commentRoutes);
 app.use(`${API_VERSION}/admin`, adminRoutes);
 app.use(`${API_VERSION}/upload`, uploadRoutes);
 
@@ -86,7 +93,9 @@ const startServer = async () => {
   try {
     await connectDB();
     app.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+      console.log(
+        `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
+      );
     });
   } catch (error) {
     console.error(`Database connection failed: ${error.message}`);
