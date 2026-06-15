@@ -1,4 +1,4 @@
-````md
+
 # 🌤️ Weather API with Redis Caching
 
 A high-performance **Weather API backend** built using **Node.js, Express, TypeScript, and Redis**. This application uses a smart **Cache-Aside caching strategy** to improve response speed, reduce unnecessary API calls, and protect third-party API rate limits.
@@ -383,4 +383,4 @@ Full Stack Developer | MERN Stack | Backend Enthusiast
 GitHub: https://github.com/Pankajkantghz
 
 ```
-```
+
