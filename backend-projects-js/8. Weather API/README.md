@@ -74,27 +74,6 @@ The newly fetched response is:
 
 ---
 
-## 📂 Project Structure
-
-```txt
-weather-api/
-│── src/
-│   ├── config/
-│   ├── controllers/
-│   ├── routes/
-│   ├── services/
-│   ├── redis/
-│   ├── utils/
-│   └── server.ts
-│
-├── dist/
-├── .env
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
----
 
 ## ⚙️ Getting Started (Local Development)
 
