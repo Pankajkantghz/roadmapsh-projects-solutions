@@ -43,7 +43,7 @@ Ensure you have the following installed on your local machine:
 
 ### 2. Installation
 Clone this repository and install the project dependencies:
-
+```bash
 git clone <your-repository-url>
 cd weather-api
 npm install
@@ -85,3 +85,13 @@ Plaintext
 
 // Second Request (Refresh)
 ⚡ LOCAL CACHE HIT: Pulling [london] data from system RAM. (Response time: ~3ms)
+🌐 Cloud Deployment (Render)
+This project is fully structured to deploy on Render using a two-service setup:
+
+Render Redis: Spin up a free Redis instance and capture the Internal Redis URL.
+
+Render Web Service: Connect your GitHub repository, assign the REDIS_URL and API_KEY environment variables inside the dashboard, and use the following deployment targets:
+
+Build Command: npm install && npm run build
+
+Start Command: npm start
