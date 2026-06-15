@@ -43,7 +43,7 @@ Ensure you have the following installed on your local machine:
 
 ### 2. Installation
 Clone this repository and install the project dependencies:
-```bash
+
 git clone <your-repository-url>
 cd weather-api
 npm install
