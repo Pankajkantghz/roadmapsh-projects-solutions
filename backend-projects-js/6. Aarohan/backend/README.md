@@ -328,12 +328,3 @@ You can test APIs using:
 
 **Pankaj Yadav**
 
-A portfolio-grade backend project showcasing:
-
-* REST API Design
-* Backend Architecture
-* Authentication & Authorization
-* Security Best Practices
-* MongoDB Database Design
-* Scalable Folder Structure
-* Production-Level Backend Development
