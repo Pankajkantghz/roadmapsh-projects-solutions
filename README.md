@@ -1,4 +1,5 @@
 https://roadmap.sh/projects/weather-api-wrapper-service
+https://roadmap.sh/projects/blogging-platform-api
 ---
 ## Project Link
 - flash card: https://flash-cards-flame-delta.vercel.app/
