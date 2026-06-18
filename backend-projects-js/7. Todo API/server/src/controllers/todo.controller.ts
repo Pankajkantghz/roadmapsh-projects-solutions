@@ -1,0 +1,124 @@
+import { Response } from "express";
+import { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+import { Todo } from "../models/todo.model.js";
+
+// 1. POST /todos
+
+export const createTodo = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { title, description } = req.body;
+    const userId = req.user?.id;
+
+    const todo = await Todo.create({
+      userId,
+      title,
+      description,
+    });
+
+    const todoObj = todo.toObject();
+
+    const { __v, ...result } = todoObj;
+
+    res.status(201).json(result);
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "Server error while creating todo" });
+    return;
+  }
+};
+
+export const getTodos = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalTodos = await Todo.countDocuments({ userId });
+
+    const todos = await Todo.find({ userId })
+      .select("-__v")
+
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: todos,
+      pagination: {
+        page,
+        limit,
+        totalItems: totalTodos,
+        totalPages: Math.ceil(totalTodos / limit),
+      },
+    });
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "Server error while fetching todos" });
+    return;
+  }
+};
+
+// 3. PUT /todos/:id
+export const updateTodo = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
+    const userId = req.user?.id;
+
+    const todo = await Todo.findOneAndUpdate(
+      { _id: id, userId },
+      {
+        $set: {
+          ...(title !== undefined && { title }),
+          ...(description !== undefined && { description }),
+        },
+      },
+      { new: true },
+    ).select("-__v");
+
+    if (!todo) {
+      res.status(404).json({ message: "Todo not found or unauthorized" });
+      return;
+    }
+
+    res.status(200).json(todo);
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "Server error while updating todo" });
+    return;
+  }
+};
+
+// 4. DELETE /todos/:id
+export const deleteTodo = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    const todo = await Todo.findOneAndDelete({ _id: id, userId });
+
+    if (!todo) {
+      res.status(404).json({ message: "Todo not found or unauthorized" });
+      return;
+    }
+    res.status(200).json({ message: "Todo deleted successfully" });
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "Server error while deleting todo" });
+    return;
+  }
+};

@@ -1,11 +1,15 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
-import { connectDB } from "./config/db";
+import { connectDB } from "./config/db.js";
+import authRoutes from "./routes/auth.routes.js";
+import todoRoutes from "./routes/todo.routes.js";
 dotenv.config();
 
 const app: Application = express();
 const PORT = 3000;
 app.use(express.json());
+app.use("/api", authRoutes);
+app.use("/api/todos", todoRoutes);
 
 app.get("/health", (req: Request, res: Response) => {
   res
