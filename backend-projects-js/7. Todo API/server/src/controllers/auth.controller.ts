@@ -1,12 +1,10 @@
 import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
-import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
-import { generateToken } from "../utils/jwt.util.js";
+import { RefreshToken } from "../models/refreshToken.model.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/token.util.js"; // Swapped out utility path
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_change_this";
-
-// POST/Register
+// POST /api/auth/register
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password } = req.body;
@@ -19,7 +17,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const existingUser = await User.findOne({ email });
-
     if (existingUser) {
       res.status(400).json({ message: "User with this email already exists" });
       return;
@@ -34,9 +31,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       password: hashedPassword,
     });
 
-    const token = generateToken(newUser._id as any);
+    // Generate both token variants
+    const accessToken = generateAccessToken(newUser._id.toString());
+    const refreshToken = await generateRefreshToken(newUser._id.toString());
 
-    res.status(201).json({ token });
+    res.status(201).json({ accessToken, refreshToken });
     return;
   } catch (error) {
     console.error("Registration error:", error);
@@ -45,8 +44,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// POST/Login
-
+// POST /api/auth/login
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
@@ -61,20 +59,73 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: "Invalid email or password" });
       return;
     }
-    //
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
       res.status(401).json({ message: "Invalid email or password" });
       return;
     }
-    const token = generateToken(user._id as any);
-    res.status(200).json({ token });
+
+    // Generate both token variants
+    const accessToken = generateAccessToken(user._id.toString());
+    const refreshToken = await generateRefreshToken(user._id.toString());
+
+    res.status(200).json({ accessToken, refreshToken });
     return;
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error during login" });
+    return;
+  }
+};
+
+// POST /api/auth/refresh
+export const refreshSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      res.status(400).json({ message: "Refresh token is required" });
+      return;
+    }
+
+    const storedToken = await RefreshToken.findOne({ token: refreshToken });
+    if (!storedToken) {
+      res.status(401).json({ message: "Invalid or expired refresh token" });
+      return;
+    }
+
+    if (new Date() > storedToken.expiresAt) {
+      await storedToken.deleteOne();
+      res.status(401).json({ message: "Refresh token expired. Please login again" });
+      return;
+    }
+
+    const newAccessToken = generateAccessToken(storedToken.userId.toString());
+
+    res.status(200).json({ accessToken: newAccessToken });
+    return;
+  } catch (error) {
+    console.error("Refresh error:", error);
+    res.status(500).json({ message: "Server error during token rotation" });
+    return;
+  }
+};
+
+// POST /api/auth/logout
+export const logoutSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (refreshToken) {
+      await RefreshToken.findOneAndDelete({ token: refreshToken });
+    }
+
+    res.status(200).json({ message: "Logged out successfully, session revoked." });
+    return;
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Server error during logout" });
     return;
   }
 };

@@ -37,3 +37,16 @@ export const updateTodoSchema = z.object({
     id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid Todo ID format"), // Validates it is a real MongoDB ObjectId
   }),
 });
+
+
+export const getTodosQuerySchema = z.object({
+  query: z.object({
+    page: z.string().optional(),
+    limit: z.string().optional(),
+    completed: z.enum(["true", "false"]).optional(),
+    search: z.string().optional(),
+    sortBy: z
+      .enum(["createdAt_asc", "createdAt_desc", "title_asc", "title_desc"])
+      .optional(),
+  }),
+});

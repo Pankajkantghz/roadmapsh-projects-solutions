@@ -35,7 +35,7 @@ export const createTodo = async (
   }
 };
 
-// 2. GET /todos
+// 2. // GET /todos?page=1&limit=10&completed=true&search=Master&sortBy=createdAt_desc
 export const getTodos = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -52,15 +52,36 @@ export const getTodos = async (
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
     const skip = (page - 1) * limit;
 
-    const totalTodos = await Todo.countDocuments({ userId });
+    const queryFilter: any = { userId }; 
 
-    const todos = await Todo.find({ userId })
+    if (req.query.completed !== undefined) { 
+      queryFilter.completed = req.query.completed === "true";
+    }
+
+    if (req.query.search) { 
+      const searchString = String(req.query.search).trim();
+      // Escapes regex characters so things like "?" or "(" don't crash your server
+      const escapedSearch = searchString.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      queryFilter.title = { $regex: escapedSearch, $options: "i" };
+    }
+
+    let sortOptions: any = { createdAt: -1 }; //doing last as first
+
+    if (req.query.sortBy) {//filed two otptions select and asc means first to last and vice versa
+      const [field, order] = (req.query.sortBy as string).split("_");
+      sortOptions = { [field]: order === "asc" ? 1 : -1 };
+    }
+
+    sortOptions._id = -1
+
+    const totalTodos = await Todo.countDocuments(queryFilter);
+    const todos = await Todo.find(queryFilter)
       .select("-__v")
-
-      .sort({ createdAt: -1, _id: -1 })
+      .sort(sortOptions)
       .skip(skip)
       .limit(limit);
 
+    
     res.status(200).json({
       data: todos,
       pagination: {

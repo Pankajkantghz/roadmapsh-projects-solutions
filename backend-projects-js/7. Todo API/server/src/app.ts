@@ -4,6 +4,7 @@ import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import todoRoutes from "./routes/todo.routes.js";
 import { timeStamp } from "node:console";
+import { authLimiter, globalLimiter } from "./middleware/rateLimit.middleware.js";
 
 dotenv.config();
 
@@ -13,9 +14,15 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Global Rate limiter
+app.get("api/", globalLimiter);
+
+// Auth rateLimiter
+app.use("/api/auth", authLimiter);
+
 // Routes
 
-app.use("/api", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/todos", todoRoutes);
 
 // Health Check
