@@ -56,14 +56,14 @@ _Note: When booting the ecosystem via Docker Compose, these configurations are m
 1. Install development and core dependencies:
 
 ```bash
-npm install
+   npm install
 
 ```
 
 2. Run compilation and start the server in development watch mode:
 
 ```bash
-npm run dev
+   npm run dev
 
 ```
 
@@ -83,14 +83,14 @@ docker compose up --build
 - To run the containers seamlessly in the background, append the detached flag:
 
 ```bash
-docker compose up -d
+  docker compose up -d
 
 ```
 
 - To shut down the container cluster and release allocated network resources:
 
 ```bash
-docker compose down
+  docker compose down
 
 ```
 
@@ -119,18 +119,41 @@ npm test
 ```text
 server/
 ├── src/
-│   ├── app.ts            # Core Express app setup & database lifecycle hook
-│   ├── models/           # Mongoose schemas (User, Todo, RefreshToken)
+│   ├── config/           # Database setup and application configuration layers
 │   ├── controllers/      # Route orchestration and response execution handlers
-│   ├── middleware/       # JWT extraction, rate limiting, error catch guards
-│   └── routes/           # Decoupled API entry paths mapping
-├── test/
-│   ├── setup.ts          # Isolated database hook and sandbox collection wipers
-│   └── api.test.ts       # Integration suite (7/7 Certified Blocks)
-├── Dockerfile            # Container build blueprints
-├── docker-compose.yml    # Multi-container multi-service microservice orchestration
-└── vitest.config.ts      # Automated testing configurations
+│   ├── middleware/       # JWT extraction, auth guards, and error catching
+│   ├── models/           # Mongoose schemas (User, Todo, RefreshToken)
+│   ├── routes/           # Decoupled API entry paths mapping
+│   ├── services/         # Decoupled business logic layer (Prisma/DB interaction)
+│   ├── types/            # Global custom Type definitions and interfaces
+│   ├── utils/            # Shared utility functions and helper abstractions
+│   ├── validators/       # Input body and schema parsing validation rules
+│   ├── app.ts            # Core Express application entry point
+│   └── seed.ts           # Mock database seeding execution script
+├── test/                 # Integration test suite execution directory
+├── .dockerignore         # Docker context exclusion file
+├── .env                  # Environment variable configuration file
+├── .env.example          # Template file for environment variable setups
+├── .gitignore            # Git exclusion tracking guidelines
+├── .prettierrc           # Global code formatting standards rules
+├── docker-compose.yml    # Multi-container service microservice orchestration
+├── Dockerfile            # Container construction image blueprint
+├── package.json          # Node dependencies and execution pipeline scripts
+├── tsconfig.json         # TypeScript compilation configurations
+└── vitest.config.ts      # Automated testing suite parameters
 
 ```
+
+````
+
+### Ship the Updates!
+Open a terminal tab, commit the updated documentation layout, and push it up to GitHub:
+
+```bash
+git add README.md
+git commit -m "docs: map absolute backend architecture tree in readme"
+git push origin master
+
+````
 
 
