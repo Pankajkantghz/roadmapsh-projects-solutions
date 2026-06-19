@@ -2,11 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { z, ZodError } from "zod"; // 1. Fixed the import
 
 export const validate = (schema: z.ZodTypeAny) => {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await schema.parseAsync({
         body: req.body,

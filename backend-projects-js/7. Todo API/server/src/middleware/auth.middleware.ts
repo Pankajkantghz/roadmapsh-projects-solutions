@@ -19,10 +19,7 @@ export const protect = async (
 ): Promise<void> => {
   try {
     let token: string | undefined;
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     }
     if (!token) {
@@ -36,9 +33,7 @@ export const protect = async (
     next();
     return;
   } catch (error) {
-    res
-      .status(401)
-      .json({ message: "Not authorized, token invalid or expired" });
+    res.status(401).json({ message: "Not authorized, token invalid or expired" });
     return;
   }
 };

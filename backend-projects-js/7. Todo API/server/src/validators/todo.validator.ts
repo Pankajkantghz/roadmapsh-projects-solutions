@@ -34,6 +34,6 @@ export const updateTodoSchema = z.object({
       .optional(),
   }),
   params: z.object({
-    id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Todo ID format'), // Validates it is a real MongoDB ObjectId
+    id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid Todo ID format"), // Validates it is a real MongoDB ObjectId
   }),
 });

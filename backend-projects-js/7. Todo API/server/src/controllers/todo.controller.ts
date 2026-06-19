@@ -12,15 +12,20 @@ export const createTodo = async (
     const { title, description } = req.body;
     const userId = req.user?.id;
 
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: User identification missing" });
+      return;
+    }
+
     const todo = await Todo.create({
       userId,
       title,
       description,
     });
 
-    const todoObj = todo.toObject();
+    const todoObj = todo.toObject(); //to convert in simple javascript object
 
-    const { __v, ...result } = todoObj;
+    const { __v, ...result } = todoObj; //destructuring
 
     res.status(201).json(result);
     return;
@@ -30,6 +35,7 @@ export const createTodo = async (
   }
 };
 
+// 2. GET /todos
 export const getTodos = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -37,8 +43,13 @@ export const getTodos = async (
   try {
     const userId = req.user?.id;
 
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: Access denied" });
+      return;
+    }
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
     const skip = (page - 1) * limit;
 
     const totalTodos = await Todo.countDocuments({ userId });
@@ -76,6 +87,11 @@ export const updateTodo = async (
     const { title, description } = req.body;
     const userId = req.user?.id;
 
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: Access denied" });
+      return;
+    }
+
     const todo = await Todo.findOneAndUpdate(
       { _id: id, userId },
       {
@@ -108,6 +124,11 @@ export const deleteTodo = async (
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: Access denied" });
+      return;
+    }
 
     const todo = await Todo.findOneAndDelete({ _id: id, userId });
 

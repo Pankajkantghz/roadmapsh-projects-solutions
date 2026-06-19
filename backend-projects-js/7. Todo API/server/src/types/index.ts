@@ -9,7 +9,7 @@ export interface IUser extends Document {
 }
 
 export interface ITodo extends Document {
-  userId: Types.ObjectId;  // to estabilish one to many relationship
+  userId: Types.ObjectId; // to estabilish one to many relationship
   title: string;
   description: string;
   isCompleted: boolean;

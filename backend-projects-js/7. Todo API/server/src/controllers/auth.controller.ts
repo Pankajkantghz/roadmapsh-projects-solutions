@@ -40,9 +40,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     return;
   } catch (error) {
     console.error("Registration error:", error);
-    res
-      .status(500)
-      .json({ message: "Internal server error during registration" });
+    res.status(500).json({ message: "Internal server error during registration" });
     return;
   }
 };
