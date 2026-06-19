@@ -1,60 +1,14 @@
 # Dependencies
 node_modules/
 
-# Build
+# Production Builds
 dist/
 build/
-.next/
-out/
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-
-# Environment variables
+# Secrets & Local Configurations
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Cache
-.cache/
-.parcel-cache/
-.vite/
-.turbo/
-
-# Coverage
-coverage/
-
-# TypeScript
-*.tsbuildinfo
-
-# IDE
-.vscode/
-.idea/
-
-# OS Files
+*.env.local
 .DS_Store
-Thumbs.db
 
-# Temporary files
-tmp/
-temp/
-
-# MongoDB
-mongodb-data/
-
-# Uploads (if storing locally)
-uploads/
-
-# Prisma
-prisma/dev.db
-prisma/dev.db-journal
-
-# Misc
-*.swp
-*.swo
+# Docker volumes / Local DB data
+mongo-data/

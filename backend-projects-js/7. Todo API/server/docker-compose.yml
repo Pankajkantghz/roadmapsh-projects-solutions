@@ -1,0 +1,26 @@
+services:
+  # Service 1: The MongoDB Database Engine
+  database:
+    image: mongo:latest
+    container_name: todo-mongodb-container
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  # Service 2: Your Node.js / TypeScript Express API App
+  api:
+    build: .  # ◄── Changed from ./server to . because compose is already in the server folder
+    container_name: todo-api-container
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://database:27017/todo_prod_db
+      - JWT_SECRET=super_secret_docker_container_key_123!
+      - PORT=3000
+    depends_on:
+      - database
+
+volumes:
+  mongo-data:
+    driver: local

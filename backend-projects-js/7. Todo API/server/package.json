@@ -8,7 +8,8 @@
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
