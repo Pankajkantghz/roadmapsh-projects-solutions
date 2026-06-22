@@ -1,16 +1,21 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import "./src/config/db.js";
+import authRoutes from "./src/routes/auth.routes.js";
+import { errorHandler } from "./src/middleware/error.middleware.js";
 
 dotenv.config();
 
 const app = express();
-
 app.use(express.json());
+app.use(cookieParser());
 
-app.get("/api/v1/health", (req, res) => {
-  res.status(200).json({ success: true, message: "API is online and healthy" });
-});
+app.use("/api/v1/auth", authRoutes);
+
+//global error handler
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
