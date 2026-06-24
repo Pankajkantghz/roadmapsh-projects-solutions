@@ -12,7 +12,7 @@ Built using **Node.js**, **Express.js**, **PostgreSQL**, and **Docker**, followi
 The following diagram illustrates the request flow through the application.
 
 <p align="center">
-  <img src="./assets/system-design-expense-tracker-api.png" alt="Expense Tracker System Design" width="1000"/>
+  <img src="./assets/sytem-design-expense-tracker-api.png" alt="Expense Tracker System Design" width="1000"/>
 </p>
 
 ---
