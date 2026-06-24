@@ -271,7 +271,3 @@ GET /expenses?page=1&limit=10
 **Pankaj Yadav**
 
 Backend Developer | MERN Stack Developer | PostgreSQL
-
-￼
-
-￼
