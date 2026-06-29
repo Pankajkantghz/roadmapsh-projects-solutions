@@ -1,0 +1,218 @@
+import { Request, Response } from "express";
+import { UAParser } from "ua-parser-js";
+import { catchAsync } from "../utils/catchAsync.js";
+import { AppError } from "../utils/AppError.js";
+import {
+  createShortUrl,
+  getShortUrlTarget,
+  recordClickMetrics,
+  getUrlAnalytics,
+  getUserUrls,
+  toggleArchiveStatus,
+  permanentDeleteUrl,
+  bulkDeleteUrls,
+  updateUrlAsset,
+} from "../services/urlService.js";
+
+export const createUrlHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { originalUrl, customAlias, tags, isFavorite, password, expiresAt } =
+      req.body;
+
+    const urlRecord = await createShortUrl(originalUrl, customAlias, {
+      tags,
+      isFavorite,
+      password,
+      expiresAt,
+    });
+
+    const rawHost = req.get("host") || "localhost:5000";
+    const cleanHost = Array.isArray(rawHost) ? rawHost[0] : rawHost;
+    const baseDomain = process.env.BASE_URL || `${req.protocol}://${cleanHost}`;
+    const shortUrl = `${baseDomain}/${urlRecord.shortCode}`;
+
+    res.status(201).json({
+      success: true,
+      message: "Short URL asset created successfully.",
+      data: {
+        id: urlRecord._id,
+        originalUrl: urlRecord.originalUrl,
+        shortCode: urlRecord.shortCode,
+        shortUrl,
+        clicks: urlRecord.clicks,
+        tags: urlRecord.tags,
+        isFavorite: urlRecord.isFavorite,
+        expiresAt: urlRecord.expiresAt,
+        createdAt: urlRecord.createdAt,
+      },
+    });
+  },
+);
+
+export const getUrlsDashboardHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { search, tag, isFavorite, page, limit } = req.query as any;
+
+    const dashboardData = await getUserUrls({
+      search,
+      tag,
+      isFavorite,
+      page,
+      limit,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Dashboard portfolio metrics retrieved successfully.",
+      data: dashboardData,
+    });
+  },
+);
+
+export const redirectShortUrl = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { shortCode } = req.params;
+    const originalUrl = await getShortUrlTarget(shortCode);
+
+    if (!originalUrl) {
+      throw new AppError(
+        "🌐 The requested shortened link does not exist or has expired.",
+        404,
+      );
+    }
+
+    const parser = new UAParser(req.headers["user-agent"] || "");
+    const uaResults = parser.getResult();
+
+    const analyticsMetadata = {
+      browser: uaResults.browser.name || "Unknown Browser",
+      os: uaResults.os.name || "Unknown OS",
+      device: uaResults.device.type || "Desktop",
+      referrer: req.get("referrer") || "Direct Link",
+    };
+
+    recordClickMetrics(shortCode, analyticsMetadata);
+
+    res.redirect(originalUrl);
+    return;
+  },
+);
+
+export const getUrlAnalyticsData = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { shortCode } = req.params;
+    const analyticsData = await getUrlAnalytics(shortCode);
+
+    if (!analyticsData) {
+      throw new AppError(
+        "🌐 Analytical metrics not found for this code resource.",
+        404,
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Analytical data metrics retrieved successfully.",
+      data: analyticsData,
+    });
+  },
+);
+
+export const updateUrlHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { tags, isFavorite, password, expiresAt } = req.body;
+
+    const updatedRecord = await updateUrlAsset(id, {
+      tags,
+      isFavorite,
+      password,
+      expiresAt,
+    });
+    if (!updatedRecord) {
+      throw new AppError(
+        "The target URL asset profile could not be found.",
+        404,
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Short URL asset configuration updated successfully.",
+      data: updatedRecord,
+    });
+  },
+);
+
+export const toggleArchiveHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+
+    // 🟢 Fallback to an empty object if req.body is undefined
+    const { isArchived } = req.body || {};
+
+    if (typeof isArchived !== "boolean") {
+      throw new AppError(
+        "A boolean 'isArchived' property is required in the request body.",
+        400,
+      );
+    }
+
+    const updatedRecord = await toggleArchiveStatus(id, isArchived);
+    if (!updatedRecord) {
+      throw new AppError(
+        "The target URL asset profile could not be found.",
+        404,
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: isArchived
+        ? "URL safely moved to long-term archive storage."
+        : "URL asset successfully restored to active runtime matrix.",
+      data: updatedRecord,
+    });
+  },
+);
+
+export const deleteUrlHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const isDeleted = await permanentDeleteUrl(id);
+
+    if (!isDeleted) {
+      throw new AppError(
+        "The target URL asset profile could not be found.",
+        404,
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Short link and cache indexes fully deleted from live cluster environments.",
+    });
+  },
+);
+
+export const bulkDeleteHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { ids } = req.body; // Array of IDs string references
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new AppError(
+        "An array containing target ID references must be supplied.",
+        400,
+      );
+    }
+
+    const executionResult = await bulkDeleteUrls(ids);
+
+    res.status(200).json({
+      success: true,
+      message: `Batch transaction processed. Purged ${executionResult.deletedCount} items completely.`,
+      data: executionResult,
+    });
+  },
+);
