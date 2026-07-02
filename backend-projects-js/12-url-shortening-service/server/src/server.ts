@@ -7,7 +7,9 @@ import { rateLimit } from "express-rate-limit";
 import { connectDB } from "./config/db.js";
 import { connectRedis } from "./config/redis.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import authRouter from "./routes/authRoutes.js";
 import urlRoutes from "./routes/urlRoutes.js";
+
 import { redirectShortUrl } from "./controllers/urlController.js";
 
 dotenv.config();
@@ -73,7 +75,7 @@ startServers().catch((err) => {
   console.error(`Infrastructure cluster connection error: ${err}`);
   process.exit(1);
 });
-
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/urls", creationLimiter, urlRoutes);
 
 app.get("/", (req, res) => {

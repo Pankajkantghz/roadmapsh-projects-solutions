@@ -13,18 +13,26 @@ import {
   bulkDeleteUrls,
   updateUrlAsset,
 } from "../services/urlService.js";
+import { Url } from "../models/Url.js";
 
 export const createUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { originalUrl, customAlias, tags, isFavorite, password, expiresAt } =
       req.body;
 
-    const urlRecord = await createShortUrl(originalUrl, customAlias, {
-      tags,
-      isFavorite,
-      password,
-      expiresAt,
-    });
+    const userId = req.user!.id;
+
+    const urlRecord = await createShortUrl(
+      originalUrl,
+      customAlias,
+      {
+        tags,
+        isFavorite,
+        password,
+        expiresAt,
+      },
+      userId,
+    );
 
     const rawHost = req.get("host") || "localhost:5000";
     const cleanHost = Array.isArray(rawHost) ? rawHost[0] : rawHost;
@@ -53,7 +61,9 @@ export const getUrlsDashboardHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { search, tag, isFavorite, page, limit } = req.query as any;
 
-    const dashboardData = await getUserUrls({
+    const userId = req.user!.id;
+
+    const dashboardData = await getUserUrls(userId, {
       search,
       tag,
       isFavorite,
@@ -72,13 +82,40 @@ export const getUrlsDashboardHandler = catchAsync(
 export const redirectShortUrl = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { shortCode } = req.params;
-    const originalUrl = await getShortUrlTarget(shortCode);
+    const { password } = req.body || {};
 
-    if (!originalUrl) {
+    const urlRecord = await Url.findOne({ shortCode, isArchived: false });
+
+    if (!urlRecord) {
       throw new AppError(
-        "🌐 The requested shortened link does not exist or has expired.",
-        404,
+        "The request shortened link does not exist or has expired",
+        400,
       );
+    }
+
+    if (urlRecord.expiresAt && new Date() > urlRecord.expiresAt) {
+      throw new AppError("This link asset has officially expired", 410);
+    }
+
+    if (urlRecord.password) {
+      // Scenario A: No password passed in req.body
+      if (password === undefined || password === null || password === "") {
+        res.status(200).json({
+          success: false,
+          passwordRequired: true,
+          message:
+            "Lockscreen challenge initialized. This URL requires verification data.",
+        });
+        return;
+      }
+
+      // Scenario B: Password passed but doesn't match
+      if (urlRecord.password !== password) {
+        throw new AppError(
+          "Incorrect password provided for this link asset.",
+          403,
+        );
+      }
     }
 
     const parser = new UAParser(req.headers["user-agent"] || "");
@@ -93,7 +130,7 @@ export const redirectShortUrl = catchAsync(
 
     recordClickMetrics(shortCode, analyticsMetadata);
 
-    res.redirect(originalUrl);
+    res.redirect(urlRecord.originalUrl);
     return;
   },
 );
@@ -122,8 +159,9 @@ export const updateUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { tags, isFavorite, password, expiresAt } = req.body;
+    const userId = req.user!.id;
 
-    const updatedRecord = await updateUrlAsset(id, {
+    const updatedRecord = await updateUrlAsset(id, userId, {
       tags,
       isFavorite,
       password,
@@ -148,8 +186,8 @@ export const toggleArchiveHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
 
-    // 🟢 Fallback to an empty object if req.body is undefined
     const { isArchived } = req.body || {};
+    const userId = req.user!.id;
 
     if (typeof isArchived !== "boolean") {
       throw new AppError(
@@ -158,7 +196,7 @@ export const toggleArchiveHandler = catchAsync(
       );
     }
 
-    const updatedRecord = await toggleArchiveStatus(id, isArchived);
+    const updatedRecord = await toggleArchiveStatus(id, userId, isArchived);
     if (!updatedRecord) {
       throw new AppError(
         "The target URL asset profile could not be found.",
@@ -179,7 +217,9 @@ export const toggleArchiveHandler = catchAsync(
 export const deleteUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    const isDeleted = await permanentDeleteUrl(id);
+
+    const userId = req.user!.id;
+    const isDeleted = await permanentDeleteUrl(id, userId);
 
     if (!isDeleted) {
       throw new AppError(
@@ -198,7 +238,8 @@ export const deleteUrlHandler = catchAsync(
 
 export const bulkDeleteHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { ids } = req.body; // Array of IDs string references
+    const { ids } = req.body;
+    const userId = req.user!.id;
 
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new AppError(
@@ -207,7 +248,7 @@ export const bulkDeleteHandler = catchAsync(
       );
     }
 
-    const executionResult = await bulkDeleteUrls(ids);
+    const executionResult = await bulkDeleteUrls(ids, userId);
 
     res.status(200).json({
       success: true,

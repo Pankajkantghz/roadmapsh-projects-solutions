@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { protect } from "../middleware/authMiddleware";
 import { validate } from "../validators/index.js";
 import {
   shortenUrlSchema,
@@ -15,25 +16,37 @@ import {
   deleteUrlHandler,
   bulkDeleteHandler,
 } from "../controllers/urlController.js";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
-// 1. Collection Operations & Feeds (Static/Query paths)
-router.post("/", validate(shortenUrlSchema), createUrlHandler);
-router.get("/", validate(getUrlsQuerySchema), getUrlsDashboardHandler);
-router.post("/bulk-delete", bulkDeleteHandler); // ◄── Placed above :id to prevent path collision
+router.post(
+  "/",
+  rateLimiter({
+    windowSizeInSeconds: 60,
+    maxRequests: 10,
+    endpointName: "url-creation",
+  }),
+  protect,
+  createUrlHandler,
+);
 
-// 2. Specific Asset Management Operations (Resource ID paths)
-router.patch("/:id", updateUrlHandler);
-router.patch("/:id/archive", toggleArchiveHandler);
-router.delete("/:id", deleteUrlHandler);
+router.post("/", protect, validate(shortenUrlSchema), createUrlHandler);
+router.get("/", protect, validate(getUrlsQuerySchema), getUrlsDashboardHandler);
+router.post("/bulk-delete", protect, bulkDeleteHandler);
 
-// 3. High-Speed Metrics Readout (ShortCode paths)
+router.patch("/:id", protect, updateUrlHandler);
+router.patch("/:id/archive", protect, toggleArchiveHandler);
+router.delete("/:id", protect, deleteUrlHandler);
+
 router.get(
   "/:shortCode/analytics",
   validate(redirectSchema),
   getUrlAnalyticsData,
 );
-router.get("/:shortCode", validate(redirectSchema), redirectShortUrl);
+router
+  .route("/:shortCode")
+  .get(validate(redirectSchema), redirectShortUrl)
+  .post(validate(redirectSchema), redirectShortUrl);
 
 export default router;

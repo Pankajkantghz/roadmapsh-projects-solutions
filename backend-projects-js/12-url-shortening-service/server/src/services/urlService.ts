@@ -8,53 +8,57 @@ import { IUrl, AnalyticsPayload, FilterQueries } from "../types/url.js";
 
 const CACHE_TTL = 86400; // 24 Hours
 
+/**
+ * 🟢 Generates a shortened URL linked securely to the authenticated user.
+ */
 export async function createShortUrl(
   originalUrl: string,
-  customAlias?: string,
-  extraFields: Partial<
-    Pick<IUrl, "tags" | "isFavorite" | "password" | "expiresAt">
-  > = {},
+  customAlias: string | undefined,
+  extraFields: Partial<Pick<IUrl, "tags" | "isFavorite" | "password" | "expiresAt">> = {},
+  userId: string // ◄── Injected owner context
 ): Promise<IUrl> {
+  
+  // Case A: User requested a Custom Alias
   if (customAlias) {
     const aliasCollision = await Url.findOne({ shortCode: customAlias });
     if (aliasCollision) {
-      throw new AppError(
-        "⚠️ This custom alias is already taken. Try another one.",
-        400,
-      );
+      throw new AppError("⚠️ This custom alias is already taken. Try another one.", 400);
     }
 
     const urlRecord = await Url.create({
       originalUrl,
       shortCode: customAlias,
+      createdBy: userId, // ◄── Set owner reference
       ...extraFields,
     });
+    
     await redisClient.setEx(`url:${customAlias}`, CACHE_TTL, originalUrl);
     return urlRecord;
   }
 
+  // Case B: Optimization for identical plain links from the same user
   const isPlainLink =
     !extraFields.tags?.length &&
     !extraFields.isFavorite &&
     !extraFields.password &&
     !extraFields.expiresAt;
+    
   if (isPlainLink) {
     const existingUrl = await Url.findOne({
       originalUrl,
+      createdBy: userId, // ◄── Check if THIS user already shortened it
       isArchived: false,
       password: null,
       expiresAt: null,
     });
+    
     if (existingUrl) {
-      await redisClient.setEx(
-        `url:${existingUrl.shortCode}`,
-        CACHE_TTL,
-        existingUrl.originalUrl,
-      );
+      await redisClient.setEx(`url:${existingUrl.shortCode}`, CACHE_TTL, existingUrl.originalUrl);
       return existingUrl;
     }
   }
 
+  // Case C: Auto-generate code utilizing the Base62 sequence auto-increment pipeline
   let shortCode = "";
   let isUnique = false;
 
@@ -75,24 +79,27 @@ export async function createShortUrl(
   const urlRecord = await Url.create({
     originalUrl,
     shortCode,
+    createdBy: userId, // ◄── Set owner reference
     ...extraFields,
   });
+  
   await redisClient.setEx(`url:${shortCode}`, CACHE_TTL, originalUrl);
-
   return urlRecord;
 }
 
-export async function getUserUrls(filters: FilterQueries) {
-  const queryCondition: any = { isArchived: false };
+/**
+ * 🟢 Retrieves links matching specific search/filter criteria belonging strictly to the request context owner.
+ */
+export async function getUserUrls(userId: string, filters: FilterQueries) {
+  // 🔐 Always isolate queries to the current user's profile dataset
+  const queryCondition: any = { createdBy: userId, isArchived: false };
 
   if (filters.search) {
     queryCondition.$text = { $search: filters.search };
   }
-
   if (filters.tag) {
     queryCondition.tags = filters.tag;
   }
-
   if (typeof filters.isFavorite === "boolean") {
     queryCondition.isFavorite = filters.isFavorite;
   }
@@ -119,9 +126,10 @@ export async function getUserUrls(filters: FilterQueries) {
   };
 }
 
-export async function getShortUrlTarget(
-  shortCode: string,
-): Promise<string | null> {
+/**
+ * 🌐 Core Public Redirection Router Target Resolution (Remains open to the public web)
+ */
+export async function getShortUrlTarget(shortCode: string): Promise<string | null> {
   const cacheKey = `url:${shortCode}`;
   try {
     const cachedUrl = await redisClient.get(cacheKey);
@@ -139,21 +147,17 @@ export async function getShortUrlTarget(
   } catch (error) {
     console.error(`❌ Cache/DB read failure for code [${shortCode}]:`, error);
     const fallbackRecord = await Url.findOne({ shortCode, isArchived: false });
-    if (
-      fallbackRecord &&
-      fallbackRecord.expiresAt &&
-      new Date() > fallbackRecord.expiresAt
-    ) {
+    if (fallbackRecord && fallbackRecord.expiresAt && new Date() > fallbackRecord.expiresAt) {
       return null;
     }
     return fallbackRecord ? fallbackRecord.originalUrl : null;
   }
 }
 
-export async function recordClickMetrics(
-  shortCode: string,
-  analytics: AnalyticsPayload,
-): Promise<void> {
+/**
+ * 📊 Public Metrics ingestion execution framework
+ */
+export async function recordClickMetrics(shortCode: string, analytics: AnalyticsPayload): Promise<void> {
   try {
     const urlRecord = await Url.findOneAndUpdate(
       { shortCode },
@@ -164,13 +168,13 @@ export async function recordClickMetrics(
 
     await Click.create({ urlId: urlRecord._id, shortCode, ...analytics });
   } catch (error) {
-    console.error(
-      `⚠️ Background Analytics Engine Failure [${shortCode}]:`,
-      error,
-    );
+    console.error(`⚠️ Background Analytics Engine Failure [${shortCode}]:`, error);
   }
 }
 
+/**
+ * 📈 Aggregates high-performance deep analytics parameters for dashboards
+ */
 export async function getUrlAnalytics(shortCode: string) {
   const urlRecord = await Url.findOne({ shortCode });
   if (!urlRecord) return null;
@@ -194,9 +198,7 @@ export async function getUrlAnalytics(shortCode: string) {
         clicksOverTime: [
           {
             $group: {
-              _id: {
-                $dateToString: { format: "%Y-%m-%d", date: "$timestamp" },
-              },
+              _id: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
               count: { $sum: 1 },
             },
           },
@@ -215,27 +217,30 @@ export async function getUrlAnalytics(shortCode: string) {
   };
 }
 
+/**
+ * 🟢 Update an asset safely ensuring ownership boundaries are respected
+ */
 export async function updateUrlAsset(
   id: string,
-  updateData: Partial<
-    Pick<IUrl, "tags" | "isFavorite" | "password" | "expiresAt">
-  >,
+  userId: string, // ◄── Injected owner context
+  updateData: Partial<Pick<IUrl, "tags" | "isFavorite" | "password" | "expiresAt">>
 ): Promise<IUrl | null> {
-  return await Url.findByIdAndUpdate(
-    id,
+  // 🔐 Must match both the _id AND the createdBy fields to succeed
+  return await Url.findOneAndUpdate(
+    { _id: id, createdBy: userId },
     { $set: updateData },
-    { new: true, runValidators: true },
+    { new: true, runValidators: true }
   );
 }
 
-export async function toggleArchiveStatus(
-  id: string,
-  isArchived: boolean,
-): Promise<IUrl | null> {
-  const urlRecord = await Url.findByIdAndUpdate(
-    id,
+/**
+ * 🟢 Toggles long term storage archive setting securely and clears hot Redis cache paths
+ */
+export async function toggleArchiveStatus(id: string, userId: string, isArchived: boolean): Promise<IUrl | null> {
+  const urlRecord = await Url.findOneAndUpdate(
+    { _id: id, createdBy: userId }, // 🔐 Boundary constraint matching
     { $set: { isArchived } },
-    { new: true },
+    { new: true }
   );
 
   if (urlRecord) {
@@ -244,26 +249,39 @@ export async function toggleArchiveStatus(
   return urlRecord;
 }
 
-export async function permanentDeleteUrl(id: string): Promise<boolean> {
-  const urlRecord = await Url.findByIdAndDelete(id);
+/**
+ * 🟢 Permanent single asset removal verifying authorization parameters
+ */
+export async function permanentDeleteUrl(id: string, userId: string): Promise<boolean> {
+  const urlRecord = await Url.findOneAndDelete({ _id: id, createdBy: userId }); // 🔐 Boundary constraint
   if (!urlRecord) return false;
 
   await redisClient.del(`url:${urlRecord.shortCode}`);
   return true;
 }
 
-export async function bulkDeleteUrls(
-  ids: string[],
-): Promise<{ deletedCount: number }> {
-  // Find profiles first to execute a safe cache purge sequence across the cluster
+/**
+ * 🟢 Batched document delete routines validating owner authorization across selected targets
+ */
+export async function bulkDeleteUrls(ids: string[], userId: string): Promise<{ deletedCount: number }> {
+  // 1. Only find records that actually belong to this user out of the incoming array
   const targetRecords = await Url.find(
-    { _id: { $in: ids } },
-    "shortCode",
+    { _id: { $in: ids }, createdBy: userId },
+    "shortCode"
   ).lean();
+  
+  if (targetRecords.length === 0) {
+    return { deletedCount: 0 };
+  }
+
   const cacheKeys = targetRecords.map((rec) => `url:${rec.shortCode}`);
 
-  const result = await Url.deleteMany({ _id: { $in: ids } });
+  // 2. Clear only the user's matched entries out of the Mongo DB cluster layer
+  const result = await Url.deleteMany({
+    _id: { $in: targetRecords.map(r => r._id) }
+  });
 
+  // 3. Clean up the key values out of the hot Redis cache cluster layer
   if (cacheKeys.length > 0) {
     await redisClient.del(cacheKeys);
   }
