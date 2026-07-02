@@ -14,6 +14,7 @@ import {
   updateUrlAsset,
 } from "../services/urlService.js";
 import { Url } from "../models/Url.js";
+import { generateQrCodeDataUrl } from "../utils/qrGenerator.js";
 
 export const createUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -39,6 +40,8 @@ export const createUrlHandler = catchAsync(
     const baseDomain = process.env.BASE_URL || `${req.protocol}://${cleanHost}`;
     const shortUrl = `${baseDomain}/${urlRecord.shortCode}`;
 
+    const qrCodeDataUrl = await generateQrCodeDataUrl(shortUrl);
+
     res.status(201).json({
       success: true,
       message: "Short URL asset created successfully.",
@@ -47,6 +50,7 @@ export const createUrlHandler = catchAsync(
         originalUrl: urlRecord.originalUrl,
         shortCode: urlRecord.shortCode,
         shortUrl,
+        qrCode: qrCodeDataUrl,
         clicks: urlRecord.clicks,
         tags: urlRecord.tags,
         isFavorite: urlRecord.isFavorite,
