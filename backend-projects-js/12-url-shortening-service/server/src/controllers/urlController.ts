@@ -51,6 +51,7 @@ export const createUrlHandler = catchAsync(
         shortCode: urlRecord.shortCode,
         shortUrl,
         qrCode: qrCodeDataUrl,
+        
         clicks: urlRecord.clicks,
         tags: urlRecord.tags,
         isFavorite: urlRecord.isFavorite,

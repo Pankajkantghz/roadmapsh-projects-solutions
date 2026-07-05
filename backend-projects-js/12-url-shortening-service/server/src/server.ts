@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+dotenv.config();
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import { rateLimit } from "express-rate-limit";
@@ -12,7 +13,6 @@ import urlRoutes from "./routes/urlRoutes.js";
 
 import { redirectShortUrl } from "./controllers/urlController.js";
 
-dotenv.config();
 const app = express();
 
 app.use((req, _res, next) => {
