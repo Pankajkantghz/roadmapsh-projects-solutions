@@ -15,6 +15,7 @@ import {
 } from "../services/urlService.js";
 import { Url } from "../models/Url.js";
 import { generateQrCodeDataUrl } from "../utils/qrGenerator.js";
+import { redisClient } from "../config/redis.js";
 
 export const createUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -51,7 +52,7 @@ export const createUrlHandler = catchAsync(
         shortCode: urlRecord.shortCode,
         shortUrl,
         qrCode: qrCodeDataUrl,
-        
+
         clicks: urlRecord.clicks,
         tags: urlRecord.tags,
         isFavorite: urlRecord.isFavorite,
@@ -86,25 +87,45 @@ export const getUrlsDashboardHandler = catchAsync(
 
 export const redirectShortUrl = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { shortCode } = req.params;
+    const { shortCode: rawShortCode } = req.params;
+    const shortCode = Array.isArray(rawShortCode)
+      ? rawShortCode[0]
+      : rawShortCode;
+
+    if (!shortCode) {
+      throw new AppError("Invalid link format parameter requested.", 400);
+    }
     const { password } = req.body || {};
 
-    const urlRecord = await Url.findOne({ shortCode, isArchived: false });
+    let targetUrl: string | null = null;
+    let urlRecord: any = null;
+
+    if (redisClient?.isOpen) {
+      targetUrl = await redisClient.get(`url-cache:${shortCode}`);
+    }
+
+    if (targetUrl) {
+      res.redirect(targetUrl);
+
+      processBackgroundMetrics(req, shortCode);
+      return;
+    }
+
+    urlRecord = await Url.findOne({ shortCode, isArchived: false });
 
     if (!urlRecord) {
       throw new AppError(
-        "The request shortened link does not exist or has expired",
-        400,
+        "The requested shortened link does not exist or has been archived.",
+        404,
       );
     }
 
     if (urlRecord.expiresAt && new Date() > urlRecord.expiresAt) {
-      throw new AppError("This link asset has officially expired", 410);
+      throw new AppError("This link asset has officially expired.", 410);
     }
 
     if (urlRecord.password) {
-      // Scenario A: No password passed in req.body
-      if (password === undefined || password === null || password === "") {
+      if (!password) {
         res.status(200).json({
           success: false,
           passwordRequired: true,
@@ -114,7 +135,6 @@ export const redirectShortUrl = catchAsync(
         return;
       }
 
-      // Scenario B: Password passed but doesn't match
       if (urlRecord.password !== password) {
         throw new AppError(
           "Incorrect password provided for this link asset.",
@@ -123,26 +143,44 @@ export const redirectShortUrl = catchAsync(
       }
     }
 
-    const parser = new UAParser(req.headers["user-agent"] || "");
-    const uaResults = parser.getResult();
-
-    const analyticsMetadata = {
-      browser: uaResults.browser.name || "Unknown Browser",
-      os: uaResults.os.name || "Unknown OS",
-      device: uaResults.device.type || "Desktop",
-      referrer: req.get("referrer") || "Direct Link",
-    };
-
-    recordClickMetrics(shortCode, analyticsMetadata);
+    if (redisClient?.isOpen && !urlRecord.password) {
+      await redisClient.setEx(
+        `url-cache:${shortCode}`,
+        86400,
+        urlRecord.originalUrl,
+      );
+    }
 
     res.redirect(urlRecord.originalUrl);
+
+    // Safe Background Metrics Handshake Execution
+    processBackgroundMetrics(req, shortCode);
     return;
   },
 );
 
+function processBackgroundMetrics(req: Request, shortCode: string): void {
+  const parser = new UAParser(req.headers["user-agent"] || "");
+  const uaResults = parser.getResult();
+
+  const analyticsMetadata = {
+    browser: uaResults.browser.name || "Unknown Browser",
+    os: uaResults.os.name || "Unknown OS",
+    device: uaResults.device.type || "Desktop",
+    referrer: req.get("referrer") || "Direct Link",
+  };
+
+  recordClickMetrics(shortCode, analyticsMetadata).catch((err) => {
+    console.error(
+      `Non-blocking analytics registration failure for code [${shortCode}]:`,
+      err,
+    );
+  });
+}
+
 export const getUrlAnalyticsData = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { shortCode } = req.params;
+    const { shortCode } = req.params as { shortCode: string };
     const analyticsData = await getUrlAnalytics(shortCode);
 
     if (!analyticsData) {
@@ -162,7 +200,7 @@ export const getUrlAnalyticsData = catchAsync(
 
 export const updateUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { tags, isFavorite, password, expiresAt } = req.body;
     const userId = req.user!.id;
 
@@ -189,7 +227,7 @@ export const updateUrlHandler = catchAsync(
 
 export const toggleArchiveHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const { isArchived } = req.body || {};
     const userId = req.user!.id;
@@ -221,8 +259,7 @@ export const toggleArchiveHandler = catchAsync(
 
 export const deleteUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.params;
-
+    const { id } = req.params as { id: string };
     const userId = req.user!.id;
     const isDeleted = await permanentDeleteUrl(id, userId);
 

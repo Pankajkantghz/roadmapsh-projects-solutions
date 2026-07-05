@@ -10,10 +10,14 @@ import { connectRedis } from "./config/redis.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import authRouter from "./routes/authRoutes.js";
 import urlRoutes from "./routes/urlRoutes.js";
+import passport from "passport";
+import { configurePassport } from "./config/passport.js";
 
 import { redirectShortUrl } from "./controllers/urlController.js";
 
 const app = express();
+configurePassport();
+app.use(passport.initialize());
 
 app.use((req, _res, next) => {
   if (req.query) {

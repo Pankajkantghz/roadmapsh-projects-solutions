@@ -133,8 +133,9 @@ export const verifyEmailHandler = catchAsync(
 
 export const resendVerificationHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.id;
-    let email = req.user?.email;
+    const user = req.user as { id: string; email?: string } | undefined;
+    const userId = user?.id;
+    let email = user?.email;
 
     if (!userId) {
       throw new AppError(
@@ -235,7 +236,6 @@ export const resetPasswordHandler = catchAsync(
       throw new AppError("Please provide a new secure password.", 400);
     }
 
-    
     const hashedToken = crypto
       .createHash("sha256")
       .update(token as string)
@@ -263,4 +263,41 @@ export const resetPasswordHandler = catchAsync(
         "Password updated successfully! You can now log in with your new credentials.",
     });
   },
+);
+
+import jwt from "jsonwebtoken";
+
+export const googleAuthCallbackHandler = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const user = req.user as any; 
+
+    if (!user) {
+      throw new AppError("OAuth user context synchronization failed.", 401);
+    }
+
+    // 🔑 Generate standard JWT infrastructure stack matching local login
+    const accessToken = jwt.sign(
+      { id: user._id, email: user.email }, 
+      process.env.JWT_SECRET!, 
+      { expiresIn: "15m" }
+    );
+    
+    const refreshToken = jwt.sign(
+      { id: user._id }, 
+      process.env.JWT_REFRESH_SECRET!, 
+      { expiresIn: "7d" }
+    );
+
+    // 🍪 Inject the HTTP-Only Refresh Cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    // Hand token off to your React runtime environment
+    const targetDashboard = `${process.env.FRONTEND_URL || "http://localhost:5173"}/oauth-success?token=${accessToken}`;
+    res.redirect(targetDashboard);
+  }
 );

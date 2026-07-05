@@ -9,6 +9,7 @@ interface DecodedToken {
   exp: number;
 }
 
+
 export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   let token: string | undefined;
 

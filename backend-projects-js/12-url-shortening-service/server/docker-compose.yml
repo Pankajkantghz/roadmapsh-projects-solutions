@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+ 
+  logto-db:
+    image: postgres:16-alpine
+    container_name: darth-logto-db
+    environment:
+      POSTGRES_USER: logto
+      POSTGRES_PASSWORD: logto_secure_password_2026
+      POSTGRES_DB: logto
+    volumes:
+      - logto_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  
+  logto:
+    image: svhd/logto:latest
+    container_name: darth-logto-engine
+    ports:
+      - "3002:3002" 
+      - "3001:3001" 
+    environment:
+      TRUST_PROXY_HEADER: "1"
+      ENDPOINT: http://localhost:3001
+      ADMIN_ENDPOINT: http://localhost:3002
+      DB_URL: postgres://logto:logto_secure_password_2026@logto-db:5432/logto
+    depends_on:
+      - logto-db
+    entrypoint: ["sh", "-c", "npm run cli db seed -- --no-format && npm run start"]
+
+volumes:
+  logto_postgres_data:
