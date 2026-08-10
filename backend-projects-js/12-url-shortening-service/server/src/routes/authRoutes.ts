@@ -15,6 +15,9 @@ import passport from "passport";
 
 const router = Router();
 
+// =========================================================================
+// STANDARD AUTHENTICATION ENDPOINTS
+// =========================================================================
 router.post("/register", validate(registerSchema), registerHandler);
 router.post("/login", validate(loginSchema), loginHandler);
 
@@ -24,50 +27,24 @@ router.post("/resend-verification", protect, resendVerificationHandler);
 router.post("/forgot-password", forgotPasswordHandler);
 router.post("/reset-password/:token", resetPasswordHandler);
 
+// =========================================================================
+// GOOGLE OAUTH ENDPOINTS
+// =========================================================================
 router.get(
   "/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
-    session: false,
+    session: true, // Set to true so express-session can track state securely
   }),
 );
 
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    session: false,
+    session: false, // Turn back to false if you use JWTs post-login
     failureRedirect: "/login",
   }),
   googleAuthCallbackHandler,
 );
 
-router.get(
-  "/facebook",
-  passport.authenticate("facebook", { scope: ["email"] }),
-);
-
-router.get(
-  "/facebook/callback",
-  passport.authenticate("facebook", {
-    session: false,
-    failureRedirect: "/login",
-  }),
-  googleAuthCallbackHandler,
-);
-
-router.get(
-  "/x",
-  passport.authenticate("twitter", {
-    scope: ["users.read", "tweet.read", "offline.access"],
-  }),
-);
-
-router.get(
-  "/x/callback",
-  passport.authenticate("twitter", {
-    session: false,
-    failureRedirect: "/login",
-  }),
-  googleAuthCallbackHandler,
-);
 export default router;

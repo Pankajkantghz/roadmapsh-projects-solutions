@@ -31,7 +31,7 @@ router.post(
   createUrlHandler,
 );
 
-router.post("/", protect, validate(shortenUrlSchema), createUrlHandler);
+
 router.get("/", protect, validate(getUrlsQuerySchema), getUrlsDashboardHandler);
 router.post("/bulk-delete", protect, bulkDeleteHandler);
 

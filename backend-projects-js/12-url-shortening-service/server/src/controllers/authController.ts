@@ -7,6 +7,9 @@ import { sendEmail } from "../utils/mailer";
 import { AppError } from "../utils/AppError";
 import { User } from "../models/User";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
+import { renderRoyalEmailTemplate } from "../utils/emailTemplates";
 
 export const registerHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -25,17 +28,15 @@ export const registerHandler = catchAsync(
 
     await sendEmail({
       to: user.email,
-      subject: "Verify Your Identity - Darth Shortener",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Welcome to Darth Shortener!</h2>
-          <p>Thank you for signing up. Please verify your email address using the secure registration token below:</p>
-          <div style="background: #f1f5f9; padding: 15px; font-size: 26px; font-weight: bold; letter-spacing: 6px; text-align: center; border-radius: 6px; color: #0f172a; margin: 20px 0; border: 1px dashed #cbd5e1;">
-            ${emailOtp}
-          </div>
-          <p style="font-size: 13px; color: #64748b;">This validation challenge is temporary and will expire inside a 15-minute runtime window.</p>
-        </div>
-      `,
+      subject: `${emailOtp} - Verify Your Identity | Darth Shortener`,
+      html: renderRoyalEmailTemplate({
+        title: "Welcome to Darth Shortener",
+        bodyText:
+          "Thank you for signing up. Please enter the secure registration token below to verify your email address and activate your account:",
+        otpCode: emailOtp,
+        footerNote:
+          "This security code is temporary and will expire automatically within a 15-minute window.",
+      }),
     }).catch((err) => console.error("Background Mail Delivery Error:", err));
 
     res.cookie("refreshToken", refreshToken, {
@@ -92,7 +93,18 @@ export const verifyEmailHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { otp } = req.body;
 
-    const userId = req.user!.id;
+    // Safely extract ID regardless of whether protect middleware attaches id or userId
+    const userContext = req.user as
+      | { id?: string; userId?: string }
+      | undefined;
+    const userId = userContext?.userId || userContext?.id;
+
+    if (!userId) {
+      throw new AppError(
+        "Authentication context missing or invalid token payload.",
+        401,
+      );
+    }
 
     if (!otp) {
       throw new AppError(
@@ -120,7 +132,7 @@ export const verifyEmailHandler = catchAsync(
 
     await User.findByIdAndUpdate(userId, { isEmailVerified: true });
 
-    //Evict token from Redis so it cannot be re-used
+    // Evict token from Redis so it cannot be re-used
     await redisClient.del(redisKey);
 
     res.status(200).json({
@@ -159,16 +171,15 @@ export const resendVerificationHandler = catchAsync(
 
     await sendEmail({
       to: email,
-      subject: "New Verification Code - Darth Shortener",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Fresh Verification Token</h2>
-          <p>You requested a new verification code. Use the secure token below to activate your account:</p>
-          <div style="background: #f1f5f9; padding: 15px; font-size: 26px; font-weight: bold; letter-spacing: 6px; text-align: center; border-radius: 6px; color: #0f172a; margin: 20px 0; border: 1px dashed #cbd5e1;">
-            ${freshOtp}
-          </div>
-        </div>
-      `,
+      subject: `${freshOtp} - New Verification Code | Darth Shortener`,
+      html: renderRoyalEmailTemplate({
+        title: "Fresh Verification Code",
+        bodyText:
+          "You requested a new verification token. Use the high-security code below to complete your account activation:",
+        otpCode: freshOtp,
+        footerNote:
+          "This security token is valid for 15 minutes. If you did not request a new code, please secure your account.",
+      }),
     }).catch((err) => console.error("Background Mail Delivery Error:", err));
 
     res.status(200).json({
@@ -207,17 +218,17 @@ export const forgotPasswordHandler = catchAsync(
     await sendEmail({
       to: user.email,
       subject: "Reset Your Password - Darth Shortener",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Password Reset Request</h2>
-          <p>We received a request to reset your password. Click the secure button below to create a new credential stack:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Reset Password</a>
-          </div>
-          <p style="font-size: 12px; color: #64748b; word-break: break-all;">If the button doesn't work, copy and paste this link into your browser:<br>${resetUrl}</p>
-          <p style="font-size: 13px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px;">This security link expires automatically in 10 minutes.</p>
-        </div>
-      `,
+      html: renderRoyalEmailTemplate({
+        title: "Password Reset Request",
+        bodyText:
+          "We received a request to reset your password. Click the secure button below to initialize a new credential stack:",
+        actionButton: {
+          text: "Reset Password Now",
+          url: resetUrl,
+        },
+        footerNote:
+          "This security link expires automatically in 10 minutes. If you did not request a password reset, you can safely ignore this email.",
+      }),
     }).catch((err) => console.error("Background Mail Delivery Error:", err));
 
     res.status(200).json({
@@ -265,28 +276,17 @@ export const resetPasswordHandler = catchAsync(
   },
 );
 
-import jwt from "jsonwebtoken";
-
 export const googleAuthCallbackHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const user = req.user as any; 
+    const user = req.user as any;
 
     if (!user) {
       throw new AppError("OAuth user context synchronization failed.", 401);
     }
 
-    // 🔑 Generate standard JWT infrastructure stack matching local login
-    const accessToken = jwt.sign(
-      { id: user._id, email: user.email }, 
-      process.env.JWT_SECRET!, 
-      { expiresIn: "15m" }
-    );
-    
-    const refreshToken = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_REFRESH_SECRET!, 
-      { expiresIn: "7d" }
-    );
+    // 🔑 Generate standard JWT infrastructure stack using helper functions
+    const accessToken = generateAccessToken({ userId: user._id.toString() });
+    const refreshToken = generateRefreshToken({ userId: user._id.toString() });
 
     // 🍪 Inject the HTTP-Only Refresh Cookie
     res.cookie("refreshToken", refreshToken, {
@@ -299,5 +299,5 @@ export const googleAuthCallbackHandler = catchAsync(
     // Hand token off to your React runtime environment
     const targetDashboard = `${process.env.FRONTEND_URL || "http://localhost:5173"}/oauth-success?token=${accessToken}`;
     res.redirect(targetDashboard);
-  }
+  },
 );
