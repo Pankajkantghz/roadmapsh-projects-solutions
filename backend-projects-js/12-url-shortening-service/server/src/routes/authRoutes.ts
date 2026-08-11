@@ -11,37 +11,72 @@ import {
   verifyEmailHandler,
 } from "../controllers/authController";
 import { protect } from "../middleware/authMiddleware";
+import { rateLimiter } from "../middleware/rateLimiter";
 import passport from "passport";
 
 const router = Router();
 
-// =========================================================================
-// STANDARD AUTHENTICATION ENDPOINTS
-// =========================================================================
-router.post("/register", validate(registerSchema), registerHandler);
-router.post("/login", validate(loginSchema), loginHandler);
+// Rate limiters for sensitive endpoints
+const authLimiter = rateLimiter({
+  windowSizeInSeconds: 900, // 15 minutes
+  maxRequests: 10,
+  endpointName: "auth-sensitive",
+});
+
+const standardAuthLimiter = rateLimiter({
+  windowSizeInSeconds: 900, // 15 minutes
+  maxRequests: 30,
+  endpointName: "auth-standard",
+});
+
+// Standard Authentication Endpoints
+router.post(
+  "/register",
+  authLimiter,
+  validate(registerSchema),
+  registerHandler,
+);
+
+router.post(
+  "/login",
+  authLimiter,
+  validate(loginSchema),
+  loginHandler,
+);
 
 router.post("/verify-email", protect, verifyEmailHandler);
-router.post("/resend-verification", protect, resendVerificationHandler);
+router.post(
+  "/resend-verification",
+  protect,
+  standardAuthLimiter,
+  resendVerificationHandler,
+);
 
-router.post("/forgot-password", forgotPasswordHandler);
-router.post("/reset-password/:token", resetPasswordHandler);
+router.post(
+  "/forgot-password",
+  authLimiter,
+  forgotPasswordHandler,
+);
 
-// =========================================================================
-// GOOGLE OAUTH ENDPOINTS
-// =========================================================================
+router.post(
+  "/reset-password/:token",
+  authLimiter,
+  resetPasswordHandler,
+);
+
+// Google OAuth Endpoints
 router.get(
   "/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
-    session: true, // Set to true so express-session can track state securely
+    session: false,
   }),
 );
 
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    session: false, // Turn back to false if you use JWTs post-login
+    session: false,
     failureRedirect: "/login",
   }),
   googleAuthCallbackHandler,

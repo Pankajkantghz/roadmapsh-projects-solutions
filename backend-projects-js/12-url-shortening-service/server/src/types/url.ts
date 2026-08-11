@@ -1,8 +1,9 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IUrl extends Document {
   originalUrl: string;
   shortCode: string;
+  user: Types.ObjectId | string;
   clicks: number;
   tags: string[];
   isFavorite: boolean;

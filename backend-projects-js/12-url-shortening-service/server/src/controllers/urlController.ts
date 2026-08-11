@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { UAParser } from "ua-parser-js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../utils/AppError.js";
@@ -17,12 +17,19 @@ import { Url } from "../models/Url.js";
 import { generateQrCodeDataUrl } from "../utils/qrGenerator.js";
 import { redisClient } from "../config/redis.js";
 
+// Helper to safely resolve user ID regardless of mongoose _id vs id property
+const getUserId = (req: Request): string => {
+  const user = req.user as any;
+  if (!user) throw new AppError("Unauthorized access.", 401);
+  return user.id || user._id?.toString();
+};
+
 export const createUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { originalUrl, customAlias, tags, isFavorite, password, expiresAt } =
       req.body;
 
-    const userId = req.user!.id;
+    const userId = getUserId(req);
 
     const urlRecord = await createShortUrl(
       originalUrl,
@@ -52,7 +59,6 @@ export const createUrlHandler = catchAsync(
         shortCode: urlRecord.shortCode,
         shortUrl,
         qrCode: qrCodeDataUrl,
-
         clicks: urlRecord.clicks,
         tags: urlRecord.tags,
         isFavorite: urlRecord.isFavorite,
@@ -66,8 +72,7 @@ export const createUrlHandler = catchAsync(
 export const getUrlsDashboardHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { search, tag, isFavorite, page, limit } = req.query as any;
-
-    const userId = req.user!.id;
+    const userId = getUserId(req);
 
     const dashboardData = await getUserUrls(userId, {
       search,
@@ -106,7 +111,6 @@ export const redirectShortUrl = catchAsync(
 
     if (targetUrl) {
       res.redirect(targetUrl);
-
       processBackgroundMetrics(req, shortCode);
       return;
     }
@@ -152,8 +156,6 @@ export const redirectShortUrl = catchAsync(
     }
 
     res.redirect(urlRecord.originalUrl);
-
-    // Safe Background Metrics Handshake Execution
     processBackgroundMetrics(req, shortCode);
     return;
   },
@@ -202,7 +204,7 @@ export const updateUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params as { id: string };
     const { tags, isFavorite, password, expiresAt } = req.body;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
 
     const updatedRecord = await updateUrlAsset(id, userId, {
       tags,
@@ -228,9 +230,8 @@ export const updateUrlHandler = catchAsync(
 export const toggleArchiveHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params as { id: string };
-
     const { isArchived } = req.body || {};
-    const userId = req.user!.id;
+    const userId = getUserId(req);
 
     if (typeof isArchived !== "boolean") {
       throw new AppError(
@@ -260,7 +261,7 @@ export const toggleArchiveHandler = catchAsync(
 export const deleteUrlHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params as { id: string };
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const isDeleted = await permanentDeleteUrl(id, userId);
 
     if (!isDeleted) {
@@ -281,7 +282,7 @@ export const deleteUrlHandler = catchAsync(
 export const bulkDeleteHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { ids } = req.body;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
 
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new AppError(
@@ -299,3 +300,36 @@ export const bulkDeleteHandler = catchAsync(
     });
   },
 );
+
+export const checkAliasAvailability = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { alias } = req.params;
+
+    const cachedUrl = await redisClient.get(`url:${alias}`);
+    if (cachedUrl) {
+      return res.status(200).json({
+        available: false,
+        message: "Alias is already taken.",
+      });
+    }
+
+    const existingUrl = await Url.findOne({ shortCode: alias });
+    if (existingUrl) {
+      return res.status(200).json({
+        available: false,
+        message: "Alias is already taken.",
+      });
+    }
+
+    return res.status(200).json({
+      available: true,
+      message: "Alias is available!",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

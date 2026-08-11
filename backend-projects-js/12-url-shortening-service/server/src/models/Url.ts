@@ -3,6 +3,12 @@ import { IUrl } from "../types/url.js";
 
 const UrlSchema = new Schema<IUrl>(
   {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "User ID is required"],
+      index: true,
+    },
     originalUrl: {
       type: String,
       required: [true, "Original URL is required"],
@@ -36,7 +42,7 @@ const UrlSchema = new Schema<IUrl>(
     },
     password: {
       type: String,
-      default: null, 
+      default: null,
     },
     expiresAt: {
       type: Date,
