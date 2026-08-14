@@ -1,12 +1,13 @@
 openapi: 3.0.0
 info:
-  title: SnapRoute Engine | Complete API Documentation
+  title: SnapRoute Engine | Complete Production API Documentation
   version: 1.0.0
-  description: Fully comprehensive API specification mapping every route of the high-performance URL shortener backend.
+  description: Comprehensive OpenAPI specification covering authentication, OAuth, URL management, analytics, and password protection layers.
 servers:
   - url: http://localhost:5000/api/v1
     description: Local development server
 paths:
+  # --- AUTHENTICATION ROUTES ---
   /auth/register:
     post:
       summary: Register a new account
@@ -37,7 +38,7 @@ paths:
                   example: StrongPassword123!
       responses:
         '201':
-          description: User created successfully
+          description: User registered successfully
         '400':
           $ref: '#/components/responses/ErrorResponse'
 
@@ -70,6 +71,99 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorResponse'
 
+  /auth/verify-email:
+    post:
+      summary: Verify user email address
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Email verified successfully
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/resend-verification:
+    post:
+      summary: Resend account verification email
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Verification token sent successfully
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      summary: Initiate password reset sequence
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Password reset token dispatched if email exists
+
+  /auth/reset-password/{token}:
+    post:
+      summary: Complete password reset with token
+      tags:
+        - Authentication
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Password reset successfully
+
+  /auth/google:
+    get:
+      summary: Authenticate via Google OAuth
+      tags:
+        - Authentication (OAuth)
+      responses:
+        '302':
+          description: Redirects to Google login gateway
+
+  /auth/google/callback:
+    get:
+      summary: Google OAuth callback handler
+      tags:
+        - Authentication (OAuth)
+      responses:
+        '200':
+          description: Google user verified and token issued
+
+  # --- URL MANAGEMENT ROUTES ---
   /urls:
     post:
       summary: Create a shortened URL
@@ -88,10 +182,10 @@ paths:
               properties:
                 originalUrl:
                   type: string
-                  example: https://roadmap.sh/projects/url-shortening-service
+                  example: https://roadmap.sh
                 customAlias:
                   type: string
-                  example: my-custom-link
+                  example: my-alias
                 password:
                   type: string
                   example: secret123
@@ -102,20 +196,15 @@ paths:
                   type: array
                   items:
                     type: string
-                  example: ["dev", "roadmap"]
+                  example: ["dev"]
                 isFavorite:
                   type: boolean
-                  example: true
       responses:
         '201':
-          description: URL shortened successfully
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ErrorResponse'
+          description: Short URL created successfully
 
     get:
-      summary: Get user URL portfolio dashboard with filters
+      summary: Get user URL dashboard portfolio with filters & pagination
       tags:
         - URLs
       security:
@@ -125,35 +214,29 @@ paths:
           name: search
           schema:
             type: string
-          description: Search term matching originalUrl or shortCode
         - in: query
           name: tag
           schema:
             type: string
-          description: Filter by specific tag
         - in: query
           name: isFavorite
           schema:
             type: boolean
-          description: Filter favorite links
         - in: query
           name: page
           schema:
             type: integer
-          description: Page number for pagination
         - in: query
           name: limit
           schema:
             type: integer
-          description: Number of items per page
       responses:
         '200':
-          description: Dashboard portfolio data retrieved successfully
-        '401':
-          $ref: '#/components/responses/ErrorResponse'
+          description: Portfolio list retrieved
 
-    delete:
-      summary: Bulk delete multiple URLs
+  /urls/bulk-delete:
+    post:
+      summary: Bulk delete multiple URL records
       tags:
         - URLs
       security:
@@ -171,18 +254,31 @@ paths:
                   type: array
                   items:
                     type: string
-                  example: ["64a1b2c3d4e5f6g7h8i9j0k1", "64a1b2c3d4e5f6g7h8i9j0k2"]
+                  example: ["64a1b2c3d4e5f6g7h8i9j0k1"]
       responses:
         '200':
           description: Batch deleted successfully
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ErrorResponse'
+
+  /urls/check-alias/{alias}:
+    get:
+      summary: Check custom alias availability
+      tags:
+        - URLs
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: alias
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns availability status object
 
   /urls/{id}:
     patch:
-      summary: Update a URL asset configuration
+      summary: Update URL configuration metadata
       tags:
         - URLs
       security:
@@ -215,14 +311,10 @@ paths:
                   nullable: true
       responses:
         '200':
-          description: URL updated and Redis cache invalidated successfully
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-        '404':
-          $ref: '#/components/responses/ErrorResponse'
+          description: URL updated & cache invalidated
 
     delete:
-      summary: Permanently delete a single URL asset
+      summary: Permanently delete a single URL record
       tags:
         - URLs
       security:
@@ -235,13 +327,11 @@ paths:
             type: string
       responses:
         '200':
-          description: URL permanently deleted and evicted from cache
-        '404':
-          $ref: '#/components/responses/ErrorResponse'
+          description: URL deleted & evicted from cache
 
   /urls/{id}/archive:
     patch:
-      summary: Toggle archive state for a URL
+      summary: Toggle archive state on a URL record
       tags:
         - URLs
       security:
@@ -249,6 +339,36 @@ paths:
       parameters:
         - in: path
           name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Archive state toggled successfully
+
+  /urls/{shortCode}/analytics:
+    get:
+      summary: Get detailed click analytics (Browser, OS, Device, Referrer)
+      tags:
+        - URLs
+      parameters:
+        - in: path
+          name: shortCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analytics metadata retrieved successfully
+
+  /urls/{shortCode}/verify-password:
+    post:
+      summary: Submit password to unlock a protected short link redirection
+      tags:
+        - URLs
+      parameters:
+        - in: path
+          name: shortCode
           required: true
           schema:
             type: string
@@ -259,89 +379,23 @@ paths:
             schema:
               type: object
               required:
-                - isArchived
+                - password
               properties:
-                isArchived:
-                  type: boolean
-                  example: true
+                password:
+                  type: string
       responses:
         '200':
-          description: Archive status updated successfully
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-        '404':
-          $ref: '#/components/responses/ErrorResponse'
+          description: Password verified, returns redirection target
 
-  /urls/check-alias/{alias}:
-    get:
-      summary: Check if a custom alias is available
-      tags:
-        - URLs
-      parameters:
-        - in: path
-          name: alias
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Returns availability boolean status
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  available:
-                    type: boolean
-                    example: true
-
-  /urls/analytics/{shortCode}:
-    get:
-      summary: Get detailed click analytics breakdown
-      tags:
-        - URLs
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: shortCode
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Click metrics metadata retrieved successfully
-        '404':
-          $ref: '#/components/responses/ErrorResponse'
-
+  # --- SYSTEM HEALTH ROUTES ---
   /health:
     get:
-      summary: Service health check
+      summary: Service cluster health check (MongoDB & Redis status)
       tags:
         - System
       responses:
         '200':
-          description: Services operational status (MongoDB & Redis UP)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
-                  timestamp:
-                    type: string
-                    format: date-time
-                  services:
-                    type: object
-                    properties:
-                      database:
-                        type: string
-                        example: UP
-                      cache:
-                        type: string
-                        example: UP
+          description: Systems fully operational
 
 components:
   securitySchemes:
@@ -351,7 +405,7 @@ components:
       bearerFormat: JWT
   responses:
     ErrorResponse:
-      description: Standard error response layout
+      description: Standardized error response format
       content:
         application/json:
           schema:
@@ -362,4 +416,3 @@ components:
                 example: false
               message:
                 type: string
-                example: Error description message.
