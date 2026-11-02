@@ -1,3 +1,7 @@
+# roadmap.sh Project Solutions
+
+A collection of my solutions to project challenges from [roadmap.sh](https://roadmap.sh/), covering frontend and backend development. Projects include Java and JavaScript implementations, along with live demos for selected apps.
+---
 https://roadmap.sh/projects/expense-tracker-api
 ---
 ## Project Link
