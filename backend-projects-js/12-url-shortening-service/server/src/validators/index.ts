@@ -9,11 +9,29 @@ export const validate = (schema: ZodType) => {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      await schema.parseAsync({
+      const validated = await schema.parseAsync({
         body: req.body,
         query: req.query,
         params: req.params,
       });
+
+      if (typeof validated === "object" && validated !== null) {
+        const parsed = validated as {
+          body?: Request["body"];
+          query?: Request["query"];
+          params?: Request["params"];
+        };
+        if (parsed.body !== undefined) req.body = parsed.body;
+        if (parsed.query !== undefined) {
+          Object.defineProperty(req, "query", {
+            value: parsed.query,
+            writable: true,
+            configurable: true,
+            enumerable: true,
+          });
+        }
+        if (parsed.params !== undefined) req.params = parsed.params;
+      }
 
       next();
     } catch (error) {

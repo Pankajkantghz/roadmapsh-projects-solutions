@@ -1,13 +1,11 @@
 import { Request, Response } from "express";
-import { loginUser, registerUser } from "../services/authService";
+import { loginUser, registerUser, refreshUserSession } from "../services/authService";
 import { catchAsync } from "../utils/catchAsync";
 import crypto from "crypto";
 import { redisClient } from "../config/redis";
 import { sendEmail } from "../utils/mailer";
 import { AppError } from "../utils/AppError";
 import { User } from "../models/User";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 import { renderRoyalEmailTemplate } from "../utils/emailTemplates";
 
@@ -54,6 +52,7 @@ export const registerHandler = catchAsync(
         id: user._id,
         username: user.username,
         email: user.email,
+        isEmailVerified: user.isEmailVerified,
         accessToken,
       },
     });
@@ -83,11 +82,46 @@ export const loginHandler = catchAsync(
         id: user._id,
         username: user.username,
         email: user.email,
+        isEmailVerified: user.isEmailVerified,
         accessToken,
       },
     });
   },
 );
+
+function readCookie(req: Request, name: string): string | undefined {
+  const cookieHeader = req.headers.cookie;
+  const value = cookieHeader?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name}=`));
+  return value ? decodeURIComponent(value.slice(name.length + 1)) : undefined;
+}
+
+export const refreshHandler = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { user, accessToken } = await refreshUserSession(readCookie(req, "refreshToken") || "");
+  res.status(200).json({
+    success: true,
+    data: { id: user._id, username: user.username, email: user.email, accessToken },
+  });
+});
+
+export const logoutHandler = (_req: Request, res: Response): void => {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.status(204).end();
+};
+
+export const currentUserHandler = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) throw new AppError("You are not logged in.", 401);
+  const user = await User.findById(userId).select("username email isEmailVerified");
+  if (!user) throw new AppError("User account not found.", 404);
+  res.status(200).json({
+    success: true,
+    data: { id: user._id, username: user.username, email: user.email, isEmailVerified: user.isEmailVerified },
+  });
+});
 
 export const verifyEmailHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -164,6 +198,8 @@ export const resendVerificationHandler = catchAsync(
       email = userRecord.email;
     }
 
+    if (!email) throw new AppError("User email address is unavailable.", 500);
+
     const redisKey = `otp:verify:${userId}`;
     const freshOtp = crypto.randomInt(100000, 999999).toString();
 
@@ -200,7 +236,11 @@ export const forgotPasswordHandler = catchAsync(
 
     const user = await User.findOne({ email });
     if (!user) {
-      throw new AppError("No user found with that email address.", 404);
+      res.status(200).json({
+        success: true,
+        message: "If an account exists for that email, a password reset link has been sent.",
+      });
+      return;
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -213,7 +253,8 @@ export const forgotPasswordHandler = catchAsync(
 
     await redisClient.setEx(redisKey, 600, user._id.toString());
 
-    const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/auth/reset-password/${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetUrl = `${frontendUrl.replace(/\/$/, "")}/reset-password/${resetToken}`;
 
     await sendEmail({
       to: user.email,
@@ -233,7 +274,7 @@ export const forgotPasswordHandler = catchAsync(
 
     res.status(200).json({
       success: true,
-      message: "A password reset link has been dispatched to your email inbox.",
+      message: "If an account exists for that email, a password reset link has been sent.",
     });
   },
 );
@@ -296,8 +337,16 @@ export const googleAuthCallbackHandler = catchAsync(
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Hand token off to your React runtime environment
-    const targetDashboard = `${process.env.FRONTEND_URL || "http://localhost:5173"}/oauth-success?token=${accessToken}`;
+    // Put the one-time handoff in the URL fragment so the token is not sent in HTTP requests or referrers.
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const handoff = new URLSearchParams({
+      token: accessToken,
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      verified: String(Boolean(user.isEmailVerified)),
+    });
+    const targetDashboard = `${frontendUrl.replace(/\/$/, "")}/oauth-success#${handoff.toString()}`;
     res.redirect(targetDashboard);
   },
 );

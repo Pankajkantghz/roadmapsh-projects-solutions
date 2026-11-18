@@ -8,12 +8,19 @@ export const configurePassport = () => {
   // =========================================================================
   // GOOGLE STRATEGY
   // =========================================================================
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.info("Google OAuth is disabled; configure its credentials to enable it.");
+    return;
+  }
+
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID || "",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-        callbackURL: "http://localhost:5000/api/v1/auth/google/callback",
+        callbackURL:
+          process.env.GOOGLE_CALLBACK_URL ||
+          "http://localhost:5000/api/v1/auth/google/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -29,10 +36,10 @@ export const configurePassport = () => {
                 crypto.randomInt(100, 999),
               email,
               passwordHash: crypto.randomBytes(16).toString("hex"),
-              isVerified: true,
+              isEmailVerified: true,
             });
           }
-          return done(null, user);
+          return done(null, user.toObject() as unknown as Express.User);
         } catch (err) {
           return done(err, false);
         }

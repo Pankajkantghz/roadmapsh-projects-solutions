@@ -1,9 +1,10 @@
-```gitignore
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment variables and local secrets
 .env
+.env.*
+!.env.example
 
 # Build output
 dist/
@@ -20,6 +21,31 @@ Thumbs.db
 # IDE / Editor settings
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Language and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vite/
+
+# Java / JVM build output
+target/
+out/
+*.class
+
+# Local databases and runtime data
+*.sqlite
+*.sqlite3
+*.db
+data/*.json
 
 # TypeScript cache
 *.tsbuildinfo
@@ -35,7 +61,8 @@ coverage/
 # Temporary files
 .tmp/
 .temp/
+tmp/
+temp/
 
 # Docker
 docker-data/
-```

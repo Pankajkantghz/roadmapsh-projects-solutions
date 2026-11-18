@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import bcrypt from "bcrypt";
 import { UAParser } from "ua-parser-js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../utils/AppError.js";
@@ -71,13 +72,14 @@ export const createUrlHandler = catchAsync(
 
 export const getUrlsDashboardHandler = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { search, tag, isFavorite, page, limit } = req.query as any;
+    const { search, tag, isFavorite, archived, page, limit } = req.query as any;
     const userId = getUserId(req);
 
     const dashboardData = await getUserUrls(userId, {
       search,
       tag,
       isFavorite,
+      archived,
       page,
       limit,
     });
@@ -105,9 +107,7 @@ export const redirectShortUrl = catchAsync(
     let targetUrl: string | null = null;
     let urlRecord: any = null;
 
-    if (redisClient?.isOpen) {
-      targetUrl = await redisClient.get(`url-cache:${shortCode}`);
-    }
+    targetUrl = await getShortUrlTarget(shortCode);
 
     if (targetUrl) {
       res.redirect(targetUrl);
@@ -130,6 +130,10 @@ export const redirectShortUrl = catchAsync(
 
     if (urlRecord.password) {
       if (!password) {
+        if (req.method === "GET" && req.accepts("html")) {
+          res.status(200).type("html").send(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Protected link</title><body style="font:16px system-ui;background:#f7f7fa;color:#20212b;display:grid;place-items:center;min-height:100vh;margin:0"><form method="post" action="/api/v1/urls/${encodeURIComponent(shortCode)}/verify-password" style="box-sizing:border-box;width:min(380px,calc(100% - 32px));padding:32px;background:white;border:1px solid #eaeaef;border-radius:14px"><h1 style="font-size:22px">This link is protected</h1><p style="color:#777">Enter the password to continue.</p><label>Password<input name="password" type="password" required autofocus style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 16px;border:1px solid #ddd;border-radius:7px"></label><button style="padding:11px 16px;border:0;border-radius:7px;background:#6955e8;color:white;font-weight:600">Continue</button></form></body></html>`);
+          return;
+        }
         res.status(200).json({
           success: false,
           passwordRequired: true,
@@ -139,20 +143,12 @@ export const redirectShortUrl = catchAsync(
         return;
       }
 
-      if (urlRecord.password !== password) {
+      if (!(await bcrypt.compare(password, urlRecord.password))) {
         throw new AppError(
           "Incorrect password provided for this link asset.",
           403,
         );
       }
-    }
-
-    if (redisClient?.isOpen && !urlRecord.password) {
-      await redisClient.setEx(
-        `url-cache:${shortCode}`,
-        86400,
-        urlRecord.originalUrl,
-      );
     }
 
     res.redirect(urlRecord.originalUrl);

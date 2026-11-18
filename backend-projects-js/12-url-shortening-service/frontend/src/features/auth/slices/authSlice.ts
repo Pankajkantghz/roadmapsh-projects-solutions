@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 interface AuthState {
   token: string | null;
-  user: { id: string; email: string; name: string } | null;
+  user: { id: string; email: string; name: string; verified?: boolean } | null;
 }
 
 const initialState: AuthState = {
@@ -18,7 +18,7 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{
         token: string;
-        user: { id: string; email: string; name: string };
+        user: { id: string; email: string; name: string; verified?: boolean };
       }>,
     ) => {
       state.token = action.payload.token;

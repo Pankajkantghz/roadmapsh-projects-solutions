@@ -1,10 +1,19 @@
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { apiRequest, type ShortUrl } from "@/lib/api";
+
+interface UrlsResponse { data: { links: ShortUrl[] } }
+interface Analytics { totalClicks: number; originalUrl: string; createdAt: string; metrics: { devices: { name: string; count: number }[]; browsers: { name: string; count: number }[]; os: { name: string; count: number }[]; clicksOverTime: { date: string; count: number }[] } }
+interface AnalyticsResponse { data: Analytics }
+
 export default function AnalyticsPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="p-8 text-center border rounded-lg shadow-sm">
-        <h1 className="text-2xl font-bold mb-2">Analytics Page</h1>
-        <p className="text-muted-foreground">Your click tracking and charts will go here.</p>
-      </div>
-    </div>
-  );
+  const [params, setParams] = useSearchParams(); const [links, setLinks] = useState<ShortUrl[]>([]); const [data, setData] = useState<Analytics | null>(null); const [error, setError] = useState(""); const code = params.get("code") || "";
+  useEffect(() => { void apiRequest<UrlsResponse>("/urls?limit=100").then(r => { setLinks(r.data.links); if (!code && r.data.links[0]) setParams({ code: r.data.links[0].shortCode }, { replace: true }); }).catch(e => setError(e.message)); }, [code, setParams]);
+  useEffect(() => { if (!code) return; void apiRequest<AnalyticsResponse>(`/urls/${encodeURIComponent(code)}/analytics`).then(r => { setData(r.data); setError(""); }).catch(e => { setData(null); setError(e.message); }); }, [code]);
+  return <main className="analytics-page"><header className="analytics-header"><Link to="/dashboard" className="brand"><span className="brand-mark">↗</span> snaproute</Link><Link to="/dashboard" className="back-link">← Back to dashboard</Link></header><div className="analytics-content"><p className="eyebrow">PERFORMANCE</p><h1>Link analytics</h1><p className="muted">Understand how people find and use your short links.</p>
+    <label className="select-label">Choose a link<select value={code} onChange={e => setParams(e.target.value ? { code: e.target.value } : {})}><option value="">Select a link</option>{links.map(link => <option key={link.shortCode} value={link.shortCode}>{link.shortCode} — {link.originalUrl}</option>)}</select></label>
+    {error && <p className="notice error" role="alert">{error}</p>}{data && <><div className="analytics-summary"><article className="stat-card"><p>Total clicks</p><strong>{data.totalClicks.toLocaleString()}</strong><small>all time</small></article><article className="stat-card"><p>Created</p><strong className="date-stat">{new Date(data.createdAt).toLocaleDateString()}</strong><small>link created</small></article><article className="stat-card"><p>Destination</p><strong className="destination-stat">{(() => { try { return new URL(data.originalUrl).hostname; } catch { return data.originalUrl; } })()}</strong><small>original URL</small></article></div>
+      <section className="panel chart-panel"><div className="section-heading"><div><p className="eyebrow">ENGAGEMENT</p><h2>Clicks over time</h2></div></div>{data.metrics.clicksOverTime.length ? <div className="bar-chart" aria-label="Clicks per day">{data.metrics.clicksOverTime.slice(-14).map(point => { const max = Math.max(...data.metrics.clicksOverTime.map(p => p.count), 1); return <div className="bar-column" key={point.date} title={`${point.count} clicks on ${point.date}`}><span>{point.count}</span><i style={{ height: `${Math.max(6, (point.count / max) * 100)}%` }} /><small>{new Date(`${point.date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</small></div>; })}</div> : <p className="empty-analytics">No clicks have been recorded yet. Share your link to see activity here.</p>}</section>
+      <div className="breakdown-grid">{([["Devices", data.metrics.devices], ["Browsers", data.metrics.browsers], ["Operating systems", data.metrics.os]] as const).map(([title, values]) => <section className="panel breakdown" key={title}><p className="eyebrow">AUDIENCE</p><h2>{title}</h2>{values.length ? values.map(v => <div className="breakdown-row" key={v.name}><span>{v.name || "Unknown"}</span><strong>{v.count}</strong></div>) : <p className="muted">No data yet</p>}</section>)}</div></>}
+  </div></main>;
 }

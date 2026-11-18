@@ -232,7 +232,6 @@ Services
     ├── pnpm-lock.yaml
     ├── README.md
     ├── api.md
-    ├── test.ts
     └── tsconfig.json
 ```
 
@@ -255,7 +254,7 @@ Services
 | Validation | Zod |
 | Security | Helmet |
 | Password Hashing | bcrypt |
-| Email | SMTP |
+| Email | Brevo transactional email API |
 | Analytics | UAParser |
 | QR Generation | QR Code Generator |
 | Rate Limiting | Express Rate Limit + Redis |
@@ -275,13 +274,13 @@ Services
 - Redis
 - Docker *(optional)*
 - Google OAuth credentials *(for Google login)*
-- SMTP credentials *(for email verification and password reset)*
+- A [Brevo](https://www.brevo.com/) API key and verified sender *(optional; for verification and password reset emails)*
 
 ## 1. Clone the Repository
 
 ```bash
 git clone <your-repository-url>
-cd 12-URL-SHORTENING-SERVICE/server
+cd backend-projects-js/12-url-shortening-service/server
 ```
 
 ## 2. Install Dependencies
@@ -292,7 +291,7 @@ pnpm install
 
 ## 3. Configure Environment Variables
 
-Create a `.env` file inside the `server` directory.
+Copy `.env.example` to `.env` inside the `server` directory and replace the secret values.
 
 ```env
 NODE_ENV=development
@@ -314,10 +313,9 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_CALLBACK_URL=http://localhost:5000/api/v1/auth/google/callback
 
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_USER=your_smtp_username
-SMTP_PASSWORD=your_smtp_password
+BREVO_API_KEY=your_brevo_api_key
+SENDER_NAME=SnapRoute
+SENDER_EMAIL=your_verified_sender@example.com
 ```
 
 > **Never commit `.env` or production secrets to Git.**
@@ -364,6 +362,18 @@ pnpm start
 
 The exact commands depend on the scripts configured in `package.json`.
 
+## Run the Frontend
+
+In a second terminal:
+
+```bash
+cd ../frontend
+pnpm install
+pnpm dev
+```
+
+The frontend uses `http://localhost:5000/api` by default. Set `VITE_API_BASE_URL` in a frontend `.env` file when the API runs elsewhere.
+
 ---
 
 # 🔌 API Reference
@@ -386,6 +396,9 @@ Base route:
 |---|---|---|---|
 | `POST` | `/register` | Public | Register a new user |
 | `POST` | `/login` | Public | Authenticate user |
+| `POST` | `/refresh` | Refresh cookie | Renew an access token |
+| `POST` | `/logout` | Public | Clear the refresh-token cookie |
+| `GET` | `/me` | Protected | Retrieve the current user profile |
 | `POST` | `/verify-email` | Protected | Verify email OTP |
 | `POST` | `/resend-verification` | Protected | Resend verification OTP |
 | `POST` | `/forgot-password` | Public | Request password reset |
@@ -580,7 +593,7 @@ The raw reset token is not stored in Redis.
 Redis
 │
 ├── URL Cache
-│   └── url-cache:<shortCode>
+│   └── url:<shortCode>
 │
 ├── Email Verification OTP
 │   └── otp:verify:<userId>
@@ -730,19 +743,7 @@ Schema-based validation prevents malformed request data from reaching the core b
 
 # 🧪 Testing
 
-The repository contains:
-
-```text
-test.ts
-```
-
-Run the configured test command:
-
-```bash
-pnpm test
-```
-
-The actual test command is defined in `package.json`.
+The backend and frontend build commands are available as `pnpm build` in their respective folders. The project does not currently include an automated test suite.
 
 ---
 

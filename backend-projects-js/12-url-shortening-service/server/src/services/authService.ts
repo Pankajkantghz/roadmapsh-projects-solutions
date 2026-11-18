@@ -55,7 +55,7 @@ export async function refreshUserSession(incomingRefreshToken: string) {
   try {
     const decoded = jwt.verify(
       incomingRefreshToken,
-      process.env.JWT_REFRESH_SECRET!,
+      process.env.JWT_REFRESH_SECRET || "fallback_refresh_secret_darth_key",
     ) as RefreshDecoded;
 
     const user = await User.findById(decoded.userId);

@@ -1,10 +1,19 @@
 import { Router } from "express";
 import { validate } from "../validators";
-import { loginSchema, registerSchema } from "../validators/authValidator";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+  verifyEmailSchema,
+} from "../validators/authValidator";
 import {
   forgotPasswordHandler,
   googleAuthCallbackHandler,
   loginHandler,
+  currentUserHandler,
+  logoutHandler,
+  refreshHandler,
   registerHandler,
   resendVerificationHandler,
   resetPasswordHandler,
@@ -43,8 +52,11 @@ router.post(
   validate(loginSchema),
   loginHandler,
 );
+router.post("/refresh", standardAuthLimiter, refreshHandler);
+router.post("/logout", logoutHandler);
+router.get("/me", protect, currentUserHandler);
 
-router.post("/verify-email", protect, verifyEmailHandler);
+router.post("/verify-email", protect, validate(verifyEmailSchema), verifyEmailHandler);
 router.post(
   "/resend-verification",
   protect,
@@ -55,30 +67,41 @@ router.post(
 router.post(
   "/forgot-password",
   authLimiter,
+  validate(forgotPasswordSchema),
   forgotPasswordHandler,
 );
 
 router.post(
   "/reset-password/:token",
   authLimiter,
+  validate(resetPasswordSchema),
   resetPasswordHandler,
 );
 
 // Google OAuth Endpoints
-router.get(
-  "/google",
+router.get("/google", (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    res.status(503).json({ success: false, message: "Google sign-in is not configured on this server." });
+    return;
+  }
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
-  }),
-);
+  })(req, res, next);
+});
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: "/login",
-  }),
+  (req, res, next) => {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?oauth=unavailable`);
+      return;
+    }
+    passport.authenticate("google", {
+      session: false,
+      failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:5173"}/login?oauth=failed`,
+    })(req, res, next);
+  },
   googleAuthCallbackHandler,
 );
 

@@ -5,9 +5,18 @@ import { encodeBase62 } from "../utils/base62.js";
 import { redisClient } from "../config/redis.js";
 import { AppError } from "../utils/AppError.js";
 import { Types } from "mongoose";
+import bcrypt from "bcrypt";
 import { IUrl, AnalyticsPayload, FilterQueries } from "../types/url.js";
 
 const CACHE_TTL = 86400; // 24 Hours
+const urlCacheKey = (shortCode: string) => `url:${shortCode}`;
+const urlLockKey = (shortCode: string) => `url:locked:${shortCode}`;
+
+async function cacheUrl(shortCode: string, originalUrl: string, expiresAt?: Date | null) {
+  if (!redisClient.isOpen) return;
+  const remaining = expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : CACHE_TTL;
+  if (remaining > 0) await redisClient.setEx(urlCacheKey(shortCode), Math.min(CACHE_TTL, remaining), originalUrl);
+}
 
 // Generates a shortened URL linked securely to the authenticated user.
 export async function createShortUrl(
@@ -28,14 +37,16 @@ export async function createShortUrl(
       );
     }
 
+    const hashedPassword = extraFields.password ? await bcrypt.hash(extraFields.password, 12) : undefined;
     const urlRecord = await Url.create({
       originalUrl,
       shortCode: customAlias,
       user: userId,
       ...extraFields,
+      ...(hashedPassword ? { password: hashedPassword } : {}),
     });
 
-    await redisClient.setEx(`url:${customAlias}`, CACHE_TTL, originalUrl);
+    if (!hashedPassword) await cacheUrl(customAlias, originalUrl, extraFields.expiresAt);
     return urlRecord;
   }
 
@@ -56,11 +67,7 @@ export async function createShortUrl(
     });
 
     if (existingUrl) {
-      await redisClient.setEx(
-        `url:${existingUrl.shortCode}`,
-        CACHE_TTL,
-        existingUrl.originalUrl,
-      );
+      await cacheUrl(existingUrl.shortCode, existingUrl.originalUrl, existingUrl.expiresAt);
       return existingUrl;
     }
   }
@@ -83,14 +90,16 @@ export async function createShortUrl(
     }
   }
 
+  const hashedPassword = extraFields.password ? await bcrypt.hash(extraFields.password, 12) : undefined;
   const urlRecord = await Url.create({
     originalUrl,
     shortCode,
     user: userId,
     ...extraFields,
+    ...(hashedPassword ? { password: hashedPassword } : {}),
   });
 
-  await redisClient.setEx(`url:${shortCode}`, CACHE_TTL, originalUrl);
+  if (!hashedPassword) await cacheUrl(shortCode, originalUrl, extraFields.expiresAt);
   return urlRecord;
 }
 
@@ -102,7 +111,7 @@ export async function getUserUrls(userId: string, filters: FilterQueries) {
   // Ensure 'user' matches the exact key name in your Url Schema
   const queryCondition: any = {
     user: new Types.ObjectId(userId),
-    isArchived: false,
+    isArchived: filters.archived ?? false,
   };
 
   if (filters.search) {
@@ -141,19 +150,21 @@ export async function getUserUrls(userId: string, filters: FilterQueries) {
 export async function getShortUrlTarget(
   shortCode: string,
 ): Promise<string | null> {
-  const cacheKey = `url:${shortCode}`;
+  const cacheKey = urlCacheKey(shortCode);
   try {
+    if (await redisClient.get(urlLockKey(shortCode))) return null;
     const cachedUrl = await redisClient.get(cacheKey);
     if (cachedUrl) return cachedUrl;
 
     const urlRecord = await Url.findOne({ shortCode, isArchived: false });
     if (!urlRecord) return null;
+    if (urlRecord.password) return null;
 
     if (urlRecord.expiresAt && new Date() > urlRecord.expiresAt) {
       return null;
     }
 
-    await redisClient.setEx(cacheKey, CACHE_TTL, urlRecord.originalUrl);
+    await cacheUrl(shortCode, urlRecord.originalUrl, urlRecord.expiresAt);
     return urlRecord.originalUrl;
   } catch (error) {
     console.error(`Cache/DB read failure for code [${shortCode}]:`, error);
@@ -165,7 +176,7 @@ export async function getShortUrlTarget(
     ) {
       return null;
     }
-    return fallbackRecord ? fallbackRecord.originalUrl : null;
+    return fallbackRecord && !fallbackRecord.password ? fallbackRecord.originalUrl : null;
   }
 }
 
@@ -244,14 +255,24 @@ export async function updateUrlAsset(
     Pick<IUrl, "tags" | "isFavorite" | "password" | "expiresAt">
   >,
 ): Promise<IUrl | null> {
+  const current = await Url.findOne({ _id: id, user: userId }).select("shortCode");
+  if (!current) return null;
+  if (updateData.password && redisClient.isOpen) {
+    await redisClient.set(urlLockKey(current.shortCode), "1");
+  }
+  const safeUpdate = { ...updateData };
+  if (safeUpdate.password) safeUpdate.password = await bcrypt.hash(safeUpdate.password, 12);
   const urlRecord = await Url.findOneAndUpdate(
     { _id: id, user: userId },
-    { $set: updateData },
+    { $set: safeUpdate },
     { new: true, runValidators: true },
   );
 
   if (urlRecord) {
-    await redisClient.del(`url:${urlRecord.shortCode}`);
+    await redisClient.del(urlCacheKey(urlRecord.shortCode));
+    if (!urlRecord.password && redisClient.isOpen) {
+      await redisClient.del(urlLockKey(urlRecord.shortCode));
+    }
   }
 
   return urlRecord;
@@ -270,7 +291,7 @@ export async function toggleArchiveStatus(
   );
 
   if (urlRecord) {
-    await redisClient.del(`url:${urlRecord.shortCode}`);
+    await redisClient.del(urlCacheKey(urlRecord.shortCode));
   }
   return urlRecord;
 }
@@ -283,7 +304,8 @@ export async function permanentDeleteUrl(
   const urlRecord = await Url.findOneAndDelete({ _id: id, user: userId });
   if (!urlRecord) return false;
 
-  await redisClient.del(`url:${urlRecord.shortCode}`);
+  await redisClient.del(urlCacheKey(urlRecord.shortCode));
+  if (redisClient.isOpen) await redisClient.del(urlLockKey(urlRecord.shortCode));
   return true;
 }
 
@@ -302,7 +324,8 @@ export async function bulkDeleteUrls(
     return { deletedCount: 0 };
   }
 
-  const cacheKeys = targetRecords.map((rec) => `url:${rec.shortCode}`);
+  const cacheKeys = targetRecords.map((rec) => urlCacheKey(rec.shortCode));
+  const lockKeys = targetRecords.map((rec) => urlLockKey(rec.shortCode));
 
   // 2. Clear matched entries from MongoDB
   const result = await Url.deleteMany({
@@ -312,6 +335,7 @@ export async function bulkDeleteUrls(
   // 3. Clean up key values from Redis cache
   if (cacheKeys.length > 0) {
     await redisClient.del(cacheKeys);
+    if (redisClient.isOpen) await redisClient.del(lockKeys);
   }
 
   return { deletedCount: result.deletedCount };

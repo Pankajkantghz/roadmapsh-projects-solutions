@@ -4,7 +4,8 @@ export const shortenUrlSchema = z.object({
   body: z.object({
     originalUrl: z
       .string({ error: "Original URL is required" })
-      .url("Invalid URL format"),
+      .url("Invalid URL format")
+      .refine((value) => ["http:", "https:"].includes(new URL(value).protocol), "Only HTTP and HTTPS links are supported"),
     customAlias: z
       .string()
       .min(3, "Custom alias must be at least 3 characters long")
@@ -78,6 +79,7 @@ export const getUrlsQuerySchema = z.object({
       .string()
       .optional()
       .transform((val) => (val !== undefined ? val === "true" : undefined)),
+    archived: z.string().optional().transform((val) => val === "true"),
     page: z
       .string()
       .default("1")

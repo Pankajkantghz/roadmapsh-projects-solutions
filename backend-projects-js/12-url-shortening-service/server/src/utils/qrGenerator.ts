@@ -4,7 +4,7 @@ export const generateQrCodeDataUrl = async (
   targetUrl: string,
 ): Promise<string> => {
   try {
-    return QRCode.toDataURL(targetUrl, {
+    return await QRCode.toDataURL(targetUrl, {
       errorCorrectionLevel: "H",
       type: "image/png",
       margin: 2,

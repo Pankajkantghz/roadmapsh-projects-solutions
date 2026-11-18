@@ -1,6 +1,10 @@
 import DashboardPage from "@/pages/Dashboard";
 import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
+import AnalyticsPage from "@/pages/Analytics";
+import ForgotPasswordPage from "@/pages/ForgotPassword";
+import ResetPasswordPage from "@/pages/ResetPassword";
+import OAuthSuccessPage from "@/pages/OAuthSuccess";
 import type { RootState } from '@/app/store';
 import { useSelector } from "react-redux";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -44,6 +48,9 @@ export const AppRoutes = () => {
             </PublicRoute>
           }
         />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/oauth-success" element={<OAuthSuccessPage />} />
 
         {/* Protected Dashboard Routes */}
         <Route
@@ -55,8 +62,26 @@ export const AppRoutes = () => {
           }
         />
 
+        <Route
+          path="/urls"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Default Fallback Redirect */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

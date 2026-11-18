@@ -1,75 +1,46 @@
+# SnapRoute API
 
----
+Base URL: `http://localhost:5000/api/v1`. Interactive documentation is served at `/api-docs`.
 
-## 🌐 URL Shortener: RESTful API Design Specification
+Protected endpoints require `Authorization: Bearer <accessToken>`. Login and registration return the access token in `data.accessToken`; refresh tokens are held in an HTTP-only cookie.
 
-Our service needs to handle two primary responsibilities: **Resource Management** (creating, listing, deleting short links) and **Core Redirection** (the high-performance path that forwards users to their destination).
+## Authentication
 
-### 1. Create a Shortened URL
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/auth/register` | Create an account (`username`, `email`, `password`) |
+| `POST` | `/auth/login` | Sign in (`email`, `password`) |
+| `POST` | `/auth/refresh` | Use the refresh cookie to get a new access token |
+| `POST` | `/auth/logout` | Clear the refresh cookie |
+| `GET` | `/auth/me` | Read the signed-in account profile (Bearer token required) |
+| `POST` | `/auth/verify-email` | Verify an account using a six-digit `otp` (Bearer token required) |
+| `POST` | `/auth/resend-verification` | Send a replacement verification code (Bearer token required) |
+| `POST` | `/auth/forgot-password` | Request a reset email (`email`) |
+| `POST` | `/auth/reset-password/:token` | Set a new `password` |
+| `GET` | `/auth/google` | Begin Google OAuth (requires credentials) |
+| `GET` | `/auth/google/callback` | Complete the Google OAuth handoff |
 
-* **Endpoint:** `POST /api/v1/urls`
-* **Description:** Accepts a long URL, runs it through business logic, generates a unique token, and stores the mapping.
-* **Request Body (`application/json`):**
-```json
-{
-  "originalUrl": "https://roadmap.sh/backend/projects/url-shortening-service"
-}
+## URL management
 
-```
+All management endpoints require a Bearer token.
 
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/urls` | Create a link (`originalUrl`; optionally `customAlias`, `tags`, `isFavorite`, `password`, `expiresAt`) |
+| `GET` | `/urls` | List your active links; accepts `search`, `tag`, `isFavorite`, `archived`, `page`, and `limit` |
+| `GET` | `/urls/check-alias/:alias` | Check whether a custom alias is available |
+| `PATCH` | `/urls/:id` | Update tags, favorite state, password, or expiration |
+| `PATCH` | `/urls/:id/archive` | Archive or restore using `{ "isArchived": true }` |
+| `DELETE` | `/urls/:id` | Permanently delete one of your links |
+| `POST` | `/urls/bulk-delete` | Delete up to 100 owned links using `{ "ids": ["..."] }` |
 
-* **Success Response (`201 Created`):**
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "url_8f9a2b1c",
-    "originalUrl": "https://roadmap.sh/backend/projects/url-shortening-service",
-    "shortCode": "bX7w2k",
-    "shortUrl": "http://localhost:5000/bX7w2k",
-    "clicks": 0,
-    "createdAt": "2026-06-25T10:15:30.000Z"
-  }
-}
+Link creation returns `data.shortUrl` and a QR code data URL. Short codes can also be opened directly at `http://localhost:5000/:shortCode`; valid links return a `302` redirect. Password-protected links display a password form in a browser.
 
-```
+## Analytics and infrastructure
 
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/urls/:shortCode/analytics` | Return click totals and device, browser, OS, and daily breakdowns |
+| `GET` | `/health` | Report MongoDB and Redis connectivity |
 
-
-### 2. The Core Redirect (The High-Speed Route)
-
-* **Endpoint:** `GET /:shortCode`
-* **Description:** The public-facing link. It looks up the code, increments the analytic counter, and issues a hard browser redirect.
-* **Success Response (`302 Found`):**
-* *Headers:* `Location: https://roadmap.sh/backend/projects/url-shortening-service`
-* *Note:* We use HTTP `302 Found` (Temporary Redirect) rather than `301 Moved Permanently` because we want every single click to hit our server so we can accurately track metrics and analytics.
-
-
-
-### 3. Fetch URL Analytics
-
-* **Endpoint:** `GET /api/v1/urls/:shortCode/analytics`
-* **Description:** Retrieves performance data for a specific link.
-* **Success Response (`200 OK`):**
-```json
-{
-  "status": "success",
-  "data": {
-    "shortCode": "bX7w2k",
-    "clicks": 142,
-    "lastAccessed": "2026-06-25T15:30:00.000Z"
-  }
-}
-
-```
-
-
-
-### 4. Delete / Expire a Link
-
-* **Endpoint:** `DELETE /api/v1/urls/:shortCode`
-* **Description:** Deactivates and purges a shortened code mapping from the system.
-* **Success Response (`204 No Content`):** (No response body returned)
-
----
-
+Analytics are public to anyone who knows the short code. Click totals update asynchronously after redirects.

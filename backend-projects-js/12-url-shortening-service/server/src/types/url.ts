@@ -31,6 +31,7 @@ export interface FilterQueries {
   search?: string;
   tag?: string;
   isFavorite?: boolean;
+  archived?: boolean;
   page: number;
   limit: number;
 }

@@ -33,7 +33,7 @@ export const startExpiredLinksCron = () => {
 
       // 3. Evict expired short codes from Redis cache
       if (redisClient?.isOpen && expiredCodes.length > 0) {
-        const redisKeys = expiredCodes.map((code) => `url-cache:${code}`);
+        const redisKeys = expiredCodes.map((code) => `url:${code}`);
         await redisClient.del(redisKeys);
       }
 

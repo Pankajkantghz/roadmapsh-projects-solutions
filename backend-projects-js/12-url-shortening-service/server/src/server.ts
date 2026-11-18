@@ -26,6 +26,7 @@ const app = express();
 // Security and basic middleware
 app.use(helmet());
 app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: false, limit: "10kb" }));
 
 // Prevent prototype pollution / query object manipulation
 app.use((req, _res, next) => {
@@ -42,9 +43,14 @@ app.use((req, _res, next) => {
 
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(",")
-      : "*",
+    origin: (origin, callback) => {
+      const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173")
+        .split(",")
+        .map((value) => value.trim());
+      if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new Error("Origin is not allowed by CORS."));
+    },
+    credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
@@ -53,7 +59,7 @@ app.use(
 // Session and Passport initialization for OAuth
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "darth_secret_session_key",
+    secret: process.env.SESSION_SECRET || "local-development-session-secret-change-me",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -94,7 +100,8 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     status: "fail",
-    message: "Too many requests from this IP, please try again after 15 minutes.",
+    message:
+      "Too many requests from this IP, please try again after 15 minutes.",
   },
 });
 app.use("/api", globalLimiter);
@@ -113,7 +120,8 @@ app.get("/", (_req, res) => {
     author: "darth",
     docs: "http://localhost:5000/api-docs",
     runtime: "Node.js (TypeScript)",
-    security: "Helmet + NoSQL Mutation Bypass + Rate-Limiting + Sessions Active",
+    security:
+      "Helmet + NoSQL Mutation Bypass + Rate-Limiting + Sessions Active",
   });
 });
 
@@ -130,6 +138,12 @@ process.on("uncaughtException", (err) => {
 });
 
 const startServers = async () => {
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!process.env.SESSION_SECRET || !process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET)
+  ) {
+    throw new Error("SESSION_SECRET, JWT_ACCESS_SECRET, and JWT_REFRESH_SECRET are required in production.");
+  }
   await connectDB();
   await connectRedis();
   startExpiredLinksCron();

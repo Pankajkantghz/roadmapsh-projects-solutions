@@ -25,7 +25,10 @@ export const protect = catchAsync(async (req: Request, res: Response, next: Next
 
   try {
   
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as DecodedToken;
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_ACCESS_SECRET || "fallback_access_secret_darth_key",
+    ) as DecodedToken;
 
     
     req.user = {
