@@ -91,6 +91,7 @@ router.delete(
 router.get(
   "/:shortCode/analytics",
   analyticsLimiter,
+  protect,
   validate(redirectSchema),
   getUrlAnalyticsData,
 );

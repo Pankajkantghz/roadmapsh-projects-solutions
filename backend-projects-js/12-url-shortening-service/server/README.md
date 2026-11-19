@@ -422,7 +422,7 @@ Base route:
 | `PATCH` | `/:id` | Protected | Update URL |
 | `PATCH` | `/:id/archive` | Protected | Archive / restore URL |
 | `DELETE` | `/:id` | Protected | Permanently delete URL |
-| `GET` | `/:shortCode/analytics` | Public | Retrieve URL analytics |
+| `GET` | `/:shortCode/analytics` | Protected | Retrieve analytics for a link owned by the signed-in user |
 | `POST` | `/:shortCode/verify-password` | Public | Verify protected URL |
 | `GET` | `/check-alias/:alias` | Protected | Check alias availability |
 

@@ -1,6 +1,6 @@
 # Aarohan API 🚀
 
-![System Design](system-design.png)
+![Aarohan full-stack system design](system-design.svg)
 
 A **production-ready RESTful Blog Platform API** built with **Node.js, Express.js, MongoDB, and JWT Authentication**.
 
@@ -184,24 +184,25 @@ Create a `.env` file in the root directory.
 
 ```env
 PORT=5000
-
-MONGODB_URI=your_mongodb_connection_string
-
-ACCESS_TOKEN_SECRET=your_access_token_secret
-REFRESH_TOKEN_SECRET=your_refresh_token_secret
-
+MONGO_URI=mongodb://127.0.0.1:27017/aarohan
+ACCESS_TOKEN_SECRET=use-a-long-random-secret
 ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_SECRET=use-a-different-long-random-secret
 REFRESH_TOKEN_EXPIRES_IN=7d
-
+ALLOWED_ORIGINS=http://localhost:5173
 CLIENT_URL=http://localhost:5173
-
-EMAIL_USER=your_email
-EMAIL_PASS=your_email_password
-
+ADMIN_EMAIL=admin@example.com
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_gmail_app_password
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
+
+Use the checked-in `.env.example` as the full template. Copy it to `.env` before
+starting the API. SMTP credentials are required for signup verification and
+password recovery; Cloudinary credentials are optional until image uploads are
+used.
 
 ---
 
@@ -224,6 +225,22 @@ Server runs at:
 ```bash
 http://localhost:5000
 ```
+
+### Frontend
+
+In a second terminal, run:
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+The Vite app runs at `http://localhost:5173`. Set `CLIENT_URL` and
+`ALLOWED_ORIGINS` in the backend environment to the frontend origin when using
+a different host or port. See [the frontend README](../frontend/README.md) for
+the main user flows.
 
 ---
 
@@ -327,4 +344,3 @@ You can test APIs using:
 ## 👨‍💻 Author
 
 **Pankaj Yadav**
-

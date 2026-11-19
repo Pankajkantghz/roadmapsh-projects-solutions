@@ -13,9 +13,13 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    const user = await User.findById(decoded.id).select("-password").lean();
+    const user = await User.findById(decoded.id)
+      .select(
+        "-password -refreshToken -resetPasswordOTP -resetPasswordOTPExpires -loginAttempts -lockUntil -mustResetPassword -passwordResetRequestCount -passwordResetRequestDate -passwordResetCooldown -unlockOTPRequestCount -unlockOTPRequestDate -unlockOTPCooldown",
+      )
+      .lean();
 
     if (!user) {
       throw new ApiError(404, "User not found");

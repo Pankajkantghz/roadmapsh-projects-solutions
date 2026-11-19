@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-labelledby="title desc">
+  <title id="title">Aarohan — full-stack system design</title>
+  <desc id="desc">Architecture showing the React and Vite frontend communicating with the Express API, MongoDB, Cloudinary and SMTP, with authentication and publishing flows.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8f7f2"/><stop offset="1" stop-color="#efeee7"/></linearGradient>
+    <linearGradient id="olive" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#697653"/><stop offset="1" stop-color="#46513f"/></linearGradient>
+    <linearGradient id="rust" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#cb7956"/><stop offset="1" stop-color="#a7523d"/></linearGradient>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#22261d" flood-opacity=".08"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M2 2 10 6 2 10" fill="none" stroke="#687452" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="arrowRust" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M2 2 10 6 2 10" fill="none" stroke="#b85e43" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>
+      text{font-family:'DM Sans',Arial,sans-serif;fill:#292a24}.mono{font-family:'DM Mono',monospace;letter-spacing:1.2px}.serif{font-family:'Playfair Display',Georgia,serif}.muted{fill:#77776e}.tiny{font-size:11px}.small{font-size:13px}.body{font-size:15px}.label{font-size:11px;font-weight:700;letter-spacing:1.5px}.heading{font-size:21px;font-weight:600}.card{fill:#fbfaf6;stroke:#deddd5;stroke-width:1.2}.pill{fill:#edeee7;stroke:#d8dbcf;stroke-width:1}.pill-rust{fill:#f4e8df;stroke:#e8d1c2;stroke-width:1}
+    </style>
+  </defs>
+  <rect width="1600" height="1040" fill="url(#bg)"/>
+  <circle cx="1485" cy="68" r="135" fill="#e8e8df" opacity=".55"/><circle cx="1515" cy="42" r="83" fill="#dfe2d6" opacity=".65"/>
+  <text x="64" y="61" class="mono label" fill="#a95b42">AAROHAN JOURNAL · ARCHITECTURE</text>
+  <text x="64" y="112" class="serif" font-size="44" font-weight="500">A home for good ideas.</text>
+  <text x="65" y="141" class="muted" font-size="15">Full-stack system design · React + Vite · Express · MongoDB</text>
+  <rect x="1310" y="67" width="224" height="42" rx="21" fill="#e2e5d9"/><circle cx="1333" cy="88" r="5" fill="#687452"/><text x="1348" y="92" class="mono tiny" fill="#58634a">FULL-STACK APPLICATION</text>
+
+  <!-- User-facing client -->
+  <rect x="55" y="185" width="290" height="520" rx="16" class="card" filter="url(#shadow)"/>
+  <rect x="55" y="185" width="290" height="68" rx="16" fill="url(#olive)"/><path d="M55 237h290" stroke="#526047"/>
+  <text x="82" y="216" class="mono tiny" fill="#e4e7dc">01 · PRESENTATION</text><text x="82" y="239" font-size="20" font-weight="600" fill="#fff">Aarohan web app</text>
+  <rect x="81" y="278" width="238" height="101" rx="9" fill="#f0efe9" stroke="#e0dfd7"/>
+  <rect x="96" y="293" width="38" height="38" rx="19" fill="#dce1d3"/><text x="108" y="319" class="serif" font-size="24" fill="#58634a">a</text>
+  <text x="147" y="306" class="label" fill="#9d5a42">READER</text><text x="147" y="327" class="small">Explore · Search · Read</text><text x="97" y="357" class="tiny muted">Stories, categories, comments and saves</text>
+  <rect x="81" y="393" width="238" height="101" rx="9" fill="#f0efe9" stroke="#e0dfd7"/>
+  <rect x="96" y="408" width="38" height="38" rx="19" fill="#e9d7c9"/><text x="108" y="434" class="serif" font-size="24" fill="#ae5d43">✎</text>
+  <text x="147" y="421" class="label" fill="#9d5a42">AUTHOR</text><text x="147" y="442" class="small">Draft · Edit · Publish</text><text x="97" y="472" class="tiny muted">Verified account with access token</text>
+  <rect x="81" y="508" width="238" height="101" rx="9" fill="#f0efe9" stroke="#e0dfd7"/>
+  <rect x="96" y="523" width="38" height="38" rx="19" fill="#ddd8e6"/><text x="107" y="549" class="serif" font-size="22" fill="#625a74">⌘</text>
+  <text x="147" y="536" class="label" fill="#9d5a42">ADMIN</text><text x="147" y="557" class="small">Manage · Moderate</text><text x="97" y="587" class="tiny muted">Role-protected dashboard and controls</text>
+  <text x="82" y="655" class="mono tiny muted">REACT 19  ·  VITE  ·  REACT ROUTER</text>
+
+  <!-- API service -->
+  <rect x="395" y="185" width="785" height="520" rx="16" class="card" filter="url(#shadow)"/>
+  <rect x="395" y="185" width="785" height="68" rx="16" fill="#30332b"/><path d="M395 237h785" stroke="#30332b"/>
+  <text x="423" y="216" class="mono tiny" fill="#cfd4c3">02 · APPLICATION SERVICE</text><text x="423" y="239" font-size="20" font-weight="600" fill="#fff">Express REST API</text>
+  <rect x="424" y="276" width="727" height="91" rx="10" fill="#f0efe9" stroke="#deddd5"/>
+  <text x="445" y="300" class="label" fill="#687452">REQUEST PIPELINE</text>
+  <g class="small"><rect x="445" y="315" width="100" height="30" rx="15" class="pill"/><text x="465" y="335">Helmet</text><rect x="553" y="315" width="91" height="30" rx="15" class="pill"/><text x="574" y="335">CORS</text><rect x="652" y="315" width="132" height="30" rx="15" class="pill"/><text x="671" y="335">Rate limit</text><rect x="792" y="315" width="131" height="30" rx="15" class="pill"/><text x="807" y="335">Body parsing</text><rect x="931" y="315" width="194" height="30" rx="15" class="pill"/><text x="947" y="335">Zod validation</text></g>
+  <rect x="424" y="383" width="350" height="178" rx="10" fill="#fbfaf6" stroke="#deddd5"/>
+  <text x="445" y="411" class="label" fill="#687452">API ROUTES  ·  /api/v1</text>
+  <text x="446" y="443" class="mono small">/auth</text><text x="546" y="443" class="small muted">signup · login · OTP · refresh</text>
+  <text x="446" y="472" class="mono small">/articles</text><text x="546" y="472" class="small muted">search · CRUD · reactions · saves</text>
+  <text x="446" y="501" class="mono small">/comments</text><text x="546" y="501" class="small muted">threads · replies · moderation</text>
+  <text x="446" y="530" class="mono small">/admin · /upload</text><text x="586" y="530" class="small muted">roles · media</text>
+  <rect x="795" y="383" width="356" height="178" rx="10" fill="#fbfaf6" stroke="#deddd5"/>
+  <text x="816" y="411" class="label" fill="#b25d43">CONTROLLERS &amp; SERVICES</text>
+  <rect x="816" y="425" width="144" height="48" rx="7" class="pill-rust"/><text x="832" y="446" class="small" font-weight="600">Auth service</text><text x="832" y="463" class="tiny muted">bcrypt · JWT · OTP</text>
+  <rect x="973" y="425" width="157" height="48" rx="7" class="pill"/><text x="989" y="446" class="small" font-weight="600">Article service</text><text x="989" y="463" class="tiny muted">slugs · publishing · metrics</text>
+  <rect x="816" y="484" width="144" height="48" rx="7" class="pill"/><text x="832" y="505" class="small" font-weight="600">Comment service</text><text x="832" y="522" class="tiny muted">ownership · replies</text>
+  <rect x="973" y="484" width="157" height="48" rx="7" class="pill"/><text x="989" y="505" class="small" font-weight="600">Admin &amp; upload</text><text x="989" y="522" class="tiny muted">moderation · images</text>
+  <rect x="424" y="580" width="727" height="93" rx="10" fill="#e8eae1" stroke="#d8dbcf"/>
+  <text x="445" y="608" class="label" fill="#58634a">SECURITY &amp; ACCESS</text>
+  <text x="445" y="638" class="small">Short-lived access JWT</text><circle cx="435" cy="633" r="3" fill="#687452"/>
+  <text x="650" y="638" class="small">HttpOnly refresh cookie</text><circle cx="640" cy="633" r="3" fill="#687452"/>
+  <text x="865" y="638" class="small">Verified-user &amp; admin guards</text><circle cx="855" cy="633" r="3" fill="#687452"/>
+  <text x="445" y="658" class="tiny muted">Central error handling · account lock protection · password hashing · role-based authorization</text>
+
+  <!-- Persistent data -->
+  <rect x="1230" y="185" width="315" height="235" rx="16" class="card" filter="url(#shadow)"/>
+  <rect x="1230" y="185" width="315" height="58" rx="16" fill="#e2e7db"/>
+  <text x="1254" y="211" class="mono tiny" fill="#58634a">03 · PERSISTENCE</text><text x="1254" y="232" class="heading">MongoDB</text>
+  <text x="1255" y="277" class="small">▰  Users · roles · refresh token</text><text x="1255" y="310" class="small">▰  Articles · tags · status · views</text><text x="1255" y="343" class="small">▰  Comments · replies</text><text x="1255" y="376" class="small">▰  Reactions · bookmarks</text>
+  <text x="1255" y="401" class="mono tiny muted">MONGOOSE ODM</text>
+
+  <!-- External services -->
+  <rect x="1230" y="445" width="315" height="260" rx="16" class="card" filter="url(#shadow)"/>
+  <rect x="1230" y="445" width="315" height="58" rx="16" fill="#f1e2d7"/>
+  <text x="1254" y="471" class="mono tiny" fill="#a8573e">04 · CONNECTED SERVICES</text><text x="1254" y="492" class="heading">External integrations</text>
+  <circle cx="1275" cy="541" r="16" fill="#e7d2bd"/><text x="1268" y="547" font-size="15" fill="#8a6447">▧</text><text x="1304" y="538" class="small" font-weight="600">Cloudinary</text><text x="1304" y="557" class="tiny muted">Article image storage</text>
+  <circle cx="1275" cy="602" r="16" fill="#e4e5da"/><text x="1268" y="608" font-size="15" fill="#58634a">✉</text><text x="1304" y="599" class="small" font-weight="600">SMTP email</text><text x="1304" y="618" class="tiny muted">Verification &amp; recovery OTP</text>
+  <circle cx="1275" cy="663" r="16" fill="#dce4e1"/><text x="1268" y="669" font-size="15" fill="#4d7066">{ }</text><text x="1304" y="660" class="small" font-weight="600">Swagger UI</text><text x="1304" y="679" class="tiny muted">Interactive API documentation</text>
+
+  <!-- Connections -->
+  <path d="M345 430h47" fill="none" stroke="#687452" stroke-width="2" marker-end="url(#arrow)"/><text x="345" y="412" class="mono tiny" fill="#58634a">HTTPS / JSON</text>
+  <path d="M1180 315h42" fill="none" stroke="#687452" stroke-width="2" marker-end="url(#arrow)"/><text x="1183" y="298" class="mono tiny" fill="#58634a">READ / WRITE</text>
+  <path d="M1180 566h42" fill="none" stroke="#b85e43" stroke-width="2" marker-end="url(#arrowRust)"/><text x="1183" y="549" class="mono tiny" fill="#a8573e">UPLOAD / EMAIL</text>
+
+  <!-- User flows -->
+  <text x="58" y="761" class="mono label" fill="#a95b42">HOW A REQUEST MOVES</text>
+  <rect x="55" y="782" width="470" height="185" rx="14" class="card"/>
+  <text x="80" y="815" class="heading">01  ·  Join &amp; sign in</text>
+  <circle cx="105" cy="869" r="23" fill="#e2e5d9"/><text x="98" y="876" font-size="19" fill="#58634a">1</text><path d="M131 869h53" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <circle cx="215" cy="869" r="23" fill="#e2e5d9"/><text x="208" y="876" font-size="19" fill="#58634a">2</text><path d="M241 869h53" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <circle cx="325" cy="869" r="23" fill="#e2e5d9"/><text x="318" y="876" font-size="19" fill="#58634a">3</text><path d="M351 869h53" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <circle cx="435" cy="869" r="23" fill="#e2e5d9"/><text x="428" y="876" font-size="19" fill="#58634a">4</text>
+  <text x="80" y="921" class="tiny muted">Create account</text><text x="190" y="921" class="tiny muted">Email OTP</text><text x="301" y="921" class="tiny muted">Access JWT</text><text x="402" y="921" class="tiny muted">Protected app</text>
+
+  <rect x="565" y="782" width="470" height="185" rx="14" class="card"/>
+  <text x="590" y="815" class="heading">02  ·  Publish an idea</text>
+  <rect x="592" y="844" width="102" height="55" rx="8" fill="#edf0e8"/><text x="612" y="867" class="small" font-weight="600">Write</text><text x="607" y="885" class="tiny muted">Draft content</text>
+  <path d="M699 871h24" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="731" y="844" width="119" height="55" rx="8" fill="#edf0e8"/><text x="748" y="867" class="small" font-weight="600">Validate</text><text x="745" y="885" class="tiny muted">Zod + ownership</text>
+  <path d="M855 871h24" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="887" y="844" width="119" height="55" rx="8" fill="#f4e8df"/><text x="905" y="867" class="small" font-weight="600">Publish</text><text x="902" y="885" class="tiny muted">Slug + timestamp</text>
+  <text x="592" y="929" class="tiny muted">Public readers discover the story; comments, likes and bookmarks persist in MongoDB.</text>
+
+  <rect x="1075" y="782" width="470" height="185" rx="14" class="card"/>
+  <text x="1100" y="815" class="heading">03  ·  Recover access safely</text>
+  <rect x="1100" y="844" width="128" height="55" rx="8" fill="#edf0e8"/><text x="1118" y="867" class="small" font-weight="600">Request code</text><text x="1121" y="885" class="tiny muted">Email OTP</text>
+  <path d="M1233 871h26" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="1267" y="844" width="112" height="55" rx="8" fill="#edf0e8"/><text x="1280" y="867" class="small" font-weight="600">Verify</text><text x="1287" y="885" class="tiny muted">Short-lived code</text>
+  <path d="M1383 871h26" stroke="#687452" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="1417" y="844" width="101" height="55" rx="8" fill="#f4e8df"/><text x="1428" y="867" class="small" font-weight="600">Reset</text><text x="1424" y="885" class="tiny muted">New password</text>
+  <text x="1100" y="929" class="tiny muted">Refresh cookie is HttpOnly; access token stays short-lived.</text>
+
+  <path d="M55 993h1490" stroke="#d9d8cf"/><text x="55" y="1018" class="mono tiny muted">AAROHAN · PERSONAL BLOG PLATFORM</text><text x="1545" y="1018" text-anchor="end" class="mono tiny muted">REACT  /  EXPRESS  /  MONGODB</text>
+</svg>

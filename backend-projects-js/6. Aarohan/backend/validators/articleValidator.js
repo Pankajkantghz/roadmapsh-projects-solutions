@@ -74,5 +74,5 @@ export const updateArticleSchema = z.object({
 });
 
 export const updateArticleStatusSchema = z.object({
-  status: z.enum(["draft", "published", "archived"]),
+  status: z.enum(["draft", "published"]),
 });

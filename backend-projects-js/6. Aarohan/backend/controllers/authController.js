@@ -104,7 +104,12 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Refresh token required");
   }
 
-  const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  } catch {
+    throw new ApiError(401, "Invalid or expired refresh token");
+  }
 
   const user = await User.findById(decoded.id);
 
@@ -246,7 +251,11 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  await sendEmail(user.email, forgotPasswordTemplate(otp));
+  await sendEmail(
+    user.email,
+    "Reset Your Aarohan Password",
+    forgotPasswordTemplate(otp),
+  );
 
   res.status(200).json(new ApiResponse(200, null, "OTP sent successfully"));
 });
@@ -268,12 +277,6 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  // Already verified
-  // and not locked
-  if (user.isVerified && !user.lockUntil) {
-    throw new ApiError(400, "Account already verified");
-  }
-
   // OTP mismatch
   if (!user.resetPasswordOTP || user.resetPasswordOTP !== otp) {
     throw new ApiError(400, "Invalid OTP");
@@ -287,9 +290,10 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "OTP expired");
   }
 
-  // LOCKED ACCOUNT FLOW
-  if (user.lockUntil) {
+  // Accounts that requested recovery or were locked must choose a new password.
+  if (user.isVerified) {
     user.mustResetPassword = true;
+    user.lockUntil = null;
 
     user.resetPasswordOTP = null;
 
@@ -297,15 +301,9 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
     await user.save();
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          null,
-          "OTP verified successfully. Please reset your password.",
-        ),
-      );
+    return res.status(200).json(
+      new ApiResponse(200, null, "OTP verified successfully. Please reset your password."),
+    );
   }
 
   // SIGNUP EMAIL VERIFICATION FLOW

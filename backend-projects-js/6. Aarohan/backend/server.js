@@ -30,23 +30,23 @@ app.use(helmet());
 app.use(compression());
 
 // 2. CORS
-// const allowedOrigins = process.env.ALLOWED_ORIGINS
-//   ? process.env.ALLOWED_ORIGINS.split(",")
-//   : ["http://localhost:3000", "http://localhost:5173"];
-
-// app.use(
-//   cors({
-//     origin: allowedOrigins,
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   })
-// );
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: true,
+    origin(origin, callback) {
+      // Allow server-to-server requests and explicitly configured browser origins.
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      const error = new Error("Origin is not allowed by CORS");
+      error.statusCode = 403;
+      return callback(error);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -73,7 +73,7 @@ app.get("/", (req, res) => {
 // 7. API Routes Mapping
 app.use(`${API_VERSION}/auth`, authRoutes);
 app.use(`${API_VERSION}/articles`, articleRoutes);
-app.use(`${API_VERSION}/comments`, commentRoutes);
+app.use(API_VERSION, commentRoutes);
 app.use(`${API_VERSION}/admin`, adminRoutes);
 app.use(`${API_VERSION}/upload`, uploadRoutes);
 

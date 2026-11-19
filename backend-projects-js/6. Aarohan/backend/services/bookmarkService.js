@@ -56,6 +56,7 @@ export const getBookmarksService = async (userId) => {
   likes
   dislikes
 `,
+    populate: { path: "author", select: "name" },
   });
 
   return user.bookmarks.map((article) => {

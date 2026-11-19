@@ -16,7 +16,6 @@ import {
 } from "../services/urlService.js";
 import { Url } from "../models/Url.js";
 import { generateQrCodeDataUrl } from "../utils/qrGenerator.js";
-import { redisClient } from "../config/redis.js";
 
 // Helper to safely resolve user ID regardless of mongoose _id vs id property
 const getUserId = (req: Request): string => {
@@ -179,7 +178,7 @@ function processBackgroundMetrics(req: Request, shortCode: string): void {
 export const getUrlAnalyticsData = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { shortCode } = req.params as { shortCode: string };
-    const analyticsData = await getUrlAnalytics(shortCode);
+    const analyticsData = await getUrlAnalytics(shortCode, getUserId(req));
 
     if (!analyticsData) {
       throw new AppError(
@@ -304,14 +303,6 @@ export const checkAliasAvailability = async (
 ) => {
   try {
     const { alias } = req.params;
-
-    const cachedUrl = await redisClient.get(`url:${alias}`);
-    if (cachedUrl) {
-      return res.status(200).json({
-        available: false,
-        message: "Alias is already taken.",
-      });
-    }
 
     const existingUrl = await Url.findOne({ shortCode: alias });
     if (existingUrl) {

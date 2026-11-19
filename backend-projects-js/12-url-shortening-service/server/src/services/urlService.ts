@@ -7,6 +7,7 @@ import { AppError } from "../utils/AppError.js";
 import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 import { IUrl, AnalyticsPayload, FilterQueries } from "../types/url.js";
+import { invalidateUrlCache, invalidateBulkUrlCache } from "../utils/cacheHelper.js";
 
 const CACHE_TTL = 86400; // 24 Hours
 const urlCacheKey = (shortCode: string) => `url:${shortCode}`;
@@ -15,7 +16,14 @@ const urlLockKey = (shortCode: string) => `url:locked:${shortCode}`;
 async function cacheUrl(shortCode: string, originalUrl: string, expiresAt?: Date | null) {
   if (!redisClient.isOpen) return;
   const remaining = expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : CACHE_TTL;
-  if (remaining > 0) await redisClient.setEx(urlCacheKey(shortCode), Math.min(CACHE_TTL, remaining), originalUrl);
+  if (remaining > 0) {
+    try {
+      await redisClient.setEx(urlCacheKey(shortCode), Math.min(CACHE_TTL, remaining), originalUrl);
+    } catch (error) {
+      // Redis is an optimization; a cache write must not make a saved link look like it failed.
+      console.error(`URL cache write failed for [${shortCode}]:`, error);
+    }
+  }
 }
 
 // Generates a shortened URL linked securely to the authenticated user.
@@ -203,8 +211,8 @@ export async function recordClickMetrics(
 }
 
 // Aggregates deep analytics parameters for dashboards
-export async function getUrlAnalytics(shortCode: string) {
-  const urlRecord = await Url.findOne({ shortCode });
+export async function getUrlAnalytics(shortCode: string, userId: string) {
+  const urlRecord = await Url.findOne({ shortCode, user: userId });
   if (!urlRecord) return null;
 
   const stats = await Click.aggregate([
@@ -258,7 +266,11 @@ export async function updateUrlAsset(
   const current = await Url.findOne({ _id: id, user: userId }).select("shortCode");
   if (!current) return null;
   if (updateData.password && redisClient.isOpen) {
-    await redisClient.set(urlLockKey(current.shortCode), "1");
+    try {
+      await redisClient.setEx(urlLockKey(current.shortCode), 30, "1");
+    } catch (error) {
+      console.error(`URL cache lock failed for [${current.shortCode}]:`, error);
+    }
   }
   const safeUpdate = { ...updateData };
   if (safeUpdate.password) safeUpdate.password = await bcrypt.hash(safeUpdate.password, 12);
@@ -269,10 +281,7 @@ export async function updateUrlAsset(
   );
 
   if (urlRecord) {
-    await redisClient.del(urlCacheKey(urlRecord.shortCode));
-    if (!urlRecord.password && redisClient.isOpen) {
-      await redisClient.del(urlLockKey(urlRecord.shortCode));
-    }
+    await invalidateUrlCache(urlRecord.shortCode);
   }
 
   return urlRecord;
@@ -291,7 +300,7 @@ export async function toggleArchiveStatus(
   );
 
   if (urlRecord) {
-    await redisClient.del(urlCacheKey(urlRecord.shortCode));
+    await invalidateUrlCache(urlRecord.shortCode);
   }
   return urlRecord;
 }
@@ -304,8 +313,7 @@ export async function permanentDeleteUrl(
   const urlRecord = await Url.findOneAndDelete({ _id: id, user: userId });
   if (!urlRecord) return false;
 
-  await redisClient.del(urlCacheKey(urlRecord.shortCode));
-  if (redisClient.isOpen) await redisClient.del(urlLockKey(urlRecord.shortCode));
+  await invalidateUrlCache(urlRecord.shortCode);
   return true;
 }
 
@@ -324,19 +332,13 @@ export async function bulkDeleteUrls(
     return { deletedCount: 0 };
   }
 
-  const cacheKeys = targetRecords.map((rec) => urlCacheKey(rec.shortCode));
-  const lockKeys = targetRecords.map((rec) => urlLockKey(rec.shortCode));
-
   // 2. Clear matched entries from MongoDB
   const result = await Url.deleteMany({
     _id: { $in: targetRecords.map((r) => r._id) },
   });
 
   // 3. Clean up key values from Redis cache
-  if (cacheKeys.length > 0) {
-    await redisClient.del(cacheKeys);
-    if (redisClient.isOpen) await redisClient.del(lockKeys);
-  }
+  await invalidateBulkUrlCache(targetRecords.map((rec) => rec.shortCode));
 
   return { deletedCount: result.deletedCount };
 }

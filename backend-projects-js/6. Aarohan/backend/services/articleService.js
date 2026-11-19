@@ -4,6 +4,7 @@ import ApiError from "../utils/ApiError.js";
 
 const ARTICLE_SELECT_FIELDS = `
   title
+  content
   slug
   excerpt
   category

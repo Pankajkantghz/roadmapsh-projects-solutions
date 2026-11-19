@@ -33,7 +33,7 @@ const router =
   express.Router();
 
 router.post(
-  "/articles",
+  "/",
   verifyJWT,
   requireVerifiedUser,
   validate(
@@ -43,48 +43,48 @@ router.post(
 );
 
 router.get(
-  "/articles",
+  "/",
   getAllArticles,
 );
 
 router.get(
-  "/articles/me",
+  "/me",
   verifyJWT,
   requireVerifiedUser,
   getMyArticles,
 );
 
 router.get(
-  "/articles/trending",
+  "/trending",
   getTrendingArticles,
 );
 
 router.get(
-  "/articles/bookmarks",
+  "/bookmarks",
   verifyJWT,
   requireVerifiedUser,
   getBookmarks,
 );
 
 router.get(
-  "/articles/:slug/analytics",
+  "/:slug/analytics",
   verifyJWT,
   getArticleAnalytics,
 );
 
 router.get(
-  "/articles/:id/recommended",
+  "/:id/recommended",
   validateObjectId("articleId"),
   getRecommendedArticles,
 );
 
 router.get(
-  "/articles/:slug",
+  "/:slug",
   getSingleArticle,
 );
 
 router.patch(
-  "/articles/:id",
+  "/:id",
   verifyJWT,
   requireVerifiedUser,
   validateObjectId("articleId"),
@@ -95,7 +95,7 @@ router.patch(
 );
 
 router.patch(
-  "/articles/:id/status",
+  "/:id/status",
   verifyJWT,
   requireVerifiedUser,
   validateObjectId("articleId"),
@@ -106,7 +106,7 @@ router.patch(
 );
 
 router.delete(
-  "/articles/:id",
+  "/:id",
   verifyJWT,
   requireVerifiedUser,
   validateObjectId("articleId"),
@@ -114,7 +114,7 @@ router.delete(
 );
 
 router.post(
-  "/articles/:id/like",
+  "/:id/like",
   verifyJWT,
   requireVerifiedUser,
   validateObjectId("articleId"),
@@ -122,7 +122,7 @@ router.post(
 );
 
 router.post(
-  "/articles/:id/dislike",
+  "/:id/dislike",
   verifyJWT,
   requireVerifiedUser,
   validateObjectId("articleId"),
@@ -130,7 +130,7 @@ router.post(
 );
 
 router.post(
-  "/articles/:id/bookmark",
+  "/:id/bookmark",
   verifyJWT,
   requireVerifiedUser,
   validateObjectId("articleId"),
@@ -138,4 +138,3 @@ router.post(
 );
 
 export default router;
-

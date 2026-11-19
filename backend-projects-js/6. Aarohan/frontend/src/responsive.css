@@ -1,0 +1,17 @@
+@media (max-width: 700px) {
+  .newsletter-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .image-upload-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .image-preview {
+    width: min(132px, 100%);
+    height: 78px;
+  }
+}

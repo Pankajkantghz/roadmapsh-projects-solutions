@@ -21,7 +21,7 @@ router.post(
   "/articles/:id/comments",
   verifyJWT,
   requireVerifiedUser,
- validateObjectId("commentId"),
+ validateObjectId("id"),
   validate(commentSchema),
   createComment,
 );
@@ -32,7 +32,7 @@ router.post(
   "/comments/:id/reply",
   verifyJWT,
   requireVerifiedUser,
- validateObjectId("commentId"),
+ validateObjectId("id"),
   validate(commentSchema),
   replyToComment,
 );
@@ -41,7 +41,7 @@ router.patch(
   "/comments/:id",
   verifyJWT,
   requireVerifiedUser,
- validateObjectId("commentId"),
+ validateObjectId("id"),
   validate(commentSchema),
   updateComment,
 );
@@ -50,7 +50,7 @@ router.delete(
   "/comments/:id",
   verifyJWT,
   requireVerifiedUser,
- validateObjectId("commentId"),
+ validateObjectId("id"),
   deleteComment,
 );
 

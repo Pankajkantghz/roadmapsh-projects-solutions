@@ -40,7 +40,7 @@ Link creation returns `data.shortUrl` and a QR code data URL. Short codes can al
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/urls/:shortCode/analytics` | Return click totals and device, browser, OS, and daily breakdowns |
+| `GET` | `/urls/:shortCode/analytics` | Return the signed-in owner's click totals and device, browser, OS, and daily breakdowns (Bearer token required) |
 | `GET` | `/health` | Report MongoDB and Redis connectivity |
 
-Analytics are public to anyone who knows the short code. Click totals update asynchronously after redirects.
+Analytics require the owning account's access token. Click totals update asynchronously after redirects.

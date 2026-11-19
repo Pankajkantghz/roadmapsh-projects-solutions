@@ -9,6 +9,7 @@ import {
 } from "../utils/emailTemplate.js";
 
 export const signupService = async (name, email, password) => {
+  email = email.trim().toLowerCase();
   const existingUser = await User.findOne({
     email,
   });
@@ -64,6 +65,7 @@ export const signupService = async (name, email, password) => {
 };
 
 export const loginService = async (email, password) => {
+  email = email.trim().toLowerCase();
   const user = await User.findOne({
     email,
   });
@@ -76,6 +78,10 @@ export const loginService = async (email, password) => {
   // Email not verified
   if (!user.isVerified) {
     throw new ApiError(403, "Please verify your email first");
+  }
+
+  if (user.accountStatus !== "active") {
+    throw new ApiError(403, `Your account is ${user.accountStatus}`);
   }
 
   // Must reset password
@@ -96,6 +102,7 @@ export const loginService = async (email, password) => {
 
   // Wrong password
   if (!isPasswordCorrect) {
+    let accountLocked = false;
     user.loginAttempts += 1;
 
     // Lock after 3 attempts
@@ -118,6 +125,7 @@ export const loginService = async (email, password) => {
 
       // Force reset flow
       user.mustResetPassword = false;
+      accountLocked = true;
 
       await sendEmail(
         user.email,
@@ -127,6 +135,13 @@ export const loginService = async (email, password) => {
     }
 
     await user.save();
+
+    if (accountLocked) {
+      throw new ApiError(
+        423,
+        "Your account is temporarily locked. Enter the code we emailed to reset your password.",
+      );
+    }
 
     throw new ApiError(401, "Invalid credentials");
   }

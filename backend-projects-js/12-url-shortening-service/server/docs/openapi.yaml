@@ -348,9 +348,11 @@ paths:
 
   /urls/{shortCode}/analytics:
     get:
-      summary: Get detailed click analytics (Browser, OS, Device, Referrer)
+      summary: Get detailed analytics for a link owned by the signed-in account
       tags:
         - URLs
+      security:
+        - BearerAuth: []
       parameters:
         - in: path
           name: shortCode
